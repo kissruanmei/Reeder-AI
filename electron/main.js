@@ -14,6 +14,7 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
     title: 'Reeder AI - 智能电子书阅读器',
+    icon: path.join(__dirname, '../public/icon.png'),
     show: false,
     autoHideMenuBar: true,
     webPreferences: {

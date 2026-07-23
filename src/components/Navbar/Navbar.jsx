@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { BookOpen, Type, Sparkles, Settings, FolderOpen, Library } from 'lucide-react';
+import { ReederLogo } from '../Logo/ReederLogo';
 
 export const Navbar = ({
   bookTitle,
@@ -39,8 +40,11 @@ export const Navbar = ({
         zIndex: 90
       }}
     >
-      {/* Left: Library, File Import & TOC */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      {/* Left: Brand Logo, Library, File Import & TOC */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <ReederLogo size={28} showText={true} />
+        <div style={{ width: '1px', height: '18px', background: 'var(--border-color)' }} />
+
         <button
           onClick={onOpenLibrary}
           className={`btn-secondary ${isLibraryOpen ? 'active' : ''}`}

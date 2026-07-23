@@ -14,10 +14,20 @@ export const AiSidebar = ({ isOpen, onClose, selectedText, promptAction, onClear
   const [isStreaming, setIsStreaming] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const messagesEndRef = useRef(null);
+  const scrollContainerRef = useRef(null);
 
   // Auto scroll to bottom
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!scrollContainerRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    const { scrollHeight, scrollTop, clientHeight } = scrollContainerRef.current;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
+    
+    if (isNearBottom || !isStreaming) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   useEffect(() => {
@@ -93,7 +103,7 @@ export const AiSidebar = ({ isOpen, onClose, selectedText, promptAction, onClear
         setMessages(prev =>
           prev.map(m =>
             m.id === assistantId
-              ? { ...m, content: `⚠️ 请求失败: ${err.message}` }
+              ? { ...m, content: m.content === 'thinking...' ? `⚠️ 请求失败: ${err.message}` : `${m.content}\n\n[⚠️ 连接中断: ${err.message}]` }
               : m
           )
         );
@@ -198,7 +208,7 @@ export const AiSidebar = ({ isOpen, onClose, selectedText, promptAction, onClear
       )}
 
       {/* Messages Scroll Area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <div ref={scrollContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
         {messages.map((m) => {
           const isUser = m.role === 'user';
           return (

@@ -27,7 +27,24 @@ export class EpubParser {
 
       // Extract metadata
       const metadata = await book.loaded.metadata;
-      let coverUrl = await book.coverUrl().catch(() => null);
+      
+      let coverUrl = null;
+      try {
+        // get cover href (e.g. "OEBPS/Images/cover.jpg") instead of epubjs generated blob URL
+        const coverHref = await book.loaded.cover;
+        if (coverHref && imageCache) {
+          const lowerHref = coverHref.toLowerCase();
+          coverUrl = imageCache.fullPathMap.get(lowerHref) || null;
+          
+          if (!coverUrl) {
+            const pathParts = lowerHref.split('/');
+            const pureFilename = pathParts[pathParts.length - 1];
+            coverUrl = imageCache.filenameMap.get(pureFilename) || null;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to get cover href from epubjs:', e);
+      }
 
       // Multi-layer Fallback for Cover URL
       if (!coverUrl && imageCache) {
@@ -130,38 +147,37 @@ export class EpubParser {
 
         if (isImage) {
           try {
-            const blob = await zipEntry.async('blob');
+            const base64 = await zipEntry.async('base64');
             let mimeType = 'image/jpeg';
             if (lowerKey.endsWith('.png')) mimeType = 'image/png';
             if (lowerKey.endsWith('.gif')) mimeType = 'image/gif';
             if (lowerKey.endsWith('.webp')) mimeType = 'image/webp';
             if (lowerKey.endsWith('.svg')) mimeType = 'image/svg+xml';
 
-            const typedBlob = new Blob([blob], { type: mimeType });
-            const blobUrl = URL.createObjectURL(typedBlob);
+            const dataUrl = `data:${mimeType};base64,${base64}`;
 
             // A. Store full path (lowercase)
-            fullPathMap.set(lowerKey, blobUrl);
+            fullPathMap.set(lowerKey, dataUrl);
 
             // B. Store pure filename (lowercase, e.g., "cover.jpg")
             const parts = lowerKey.split('/');
             const filename = parts[parts.length - 1];
             if (filename) {
-              filenameMap.set(filename, blobUrl);
+              filenameMap.set(filename, dataUrl);
             }
 
             // C. Store last 2 parts suffix (e.g. "images/cover.jpg")
             if (parts.length >= 2) {
               const suffix = `${parts[parts.length - 2]}/${parts[parts.length - 1]}`;
-              suffixMap.set(suffix, blobUrl);
+              suffixMap.set(suffix, dataUrl);
             }
           } catch (e) {
-            console.warn(`Failed to generate blob URL for zip entry ${key}:`, e);
+            console.warn(`Failed to generate data URL for zip entry ${key}:`, e);
           }
         }
       }
 
-      console.log(`[Reeder Image Cache] Extracted ${filenameMap.size} image blobs from EPUB Zip.`);
+      console.log(`[Reeder Image Cache] Extracted ${filenameMap.size} image data URIs from EPUB Zip.`);
     } catch (err) {
       console.error('Error building image blob cache:', err);
     }

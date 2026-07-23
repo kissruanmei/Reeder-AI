@@ -50,7 +50,9 @@ export default function App() {
   // Background Reading Time Tracker (Adds 1 minute every 60 seconds)
   useEffect(() => {
     const timer = setInterval(() => {
-      LibraryService.addReadingMinutes(1);
+      if (document.visibilityState === 'visible') {
+        LibraryService.addReadingMinutes(1);
+      }
     }, 60000);
     return () => clearInterval(timer);
   }, []);

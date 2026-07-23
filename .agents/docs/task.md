@@ -1,0 +1,7 @@
+- `[x]` 1. 修复书籍封面与插图重启丢失问题 (EpubParser.js 改用 base64)
+- `[x]` 2. 修复同名书籍静默覆盖问题 (LibraryService.js)
+- `[x]` 3. 修复阅读时长后台防作弊漏洞 (App.jsx)
+- `[x]` 4. 修复 AI 对话框强制拉到底部体验 Bug (AiSidebar.jsx)
+- `[x]` 5. 修复 LLM 流式输出网络错误覆盖问题 (AiSidebar.jsx)
+- `[x]` 6. 修复 Lint 报错，补充 eslint 依赖 (package.json)
+- `[x]` 7. 清理并更新 Walkthrough 总结

@@ -2,6 +2,8 @@
  * Reeder AI - Library, Reading Progress & Stats Management Service
  */
 
+import { BookStorage } from './bookStorage';
+
 const STORAGE_LIBRARY_KEY = 'reeder_ai_library';
 const STORAGE_STATS_KEY = 'reeder_ai_stats';
 const STORAGE_PROGRESS_PREFIX = 'reeder_ai_progress_';
@@ -61,6 +63,7 @@ export class LibraryService {
       const library = this.getLibrary().filter(b => b.id !== bookId);
       localStorage.setItem(STORAGE_LIBRARY_KEY, JSON.stringify(library));
       localStorage.removeItem(STORAGE_PROGRESS_PREFIX + bookId);
+      BookStorage.deleteBookContent(bookId);
     } catch (e) {
       console.error('Failed to remove book:', e);
     }
@@ -164,9 +167,19 @@ export class LibraryService {
   }
 
   /**
-   * Helper: Generate unique book ID from title and author
+   * Helper: Generate unique book ID from title and author using cyrb53 string hash
    */
-  static generateBookId(title, author = '') {
-    return 'book_' + btoa(encodeURIComponent(`${title}_${author}`)).replace(/=/g, '').substring(0, 16);
+  static generateBookId(title = '', author = '') {
+    const str = `${String(title).trim()}___${String(author).trim()}`;
+    let h1 = 0xdeadbeef ^ 0, h2 = 0x41c6ce57 ^ 0;
+    for (let i = 0; i < str.length; i++) {
+      const ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    const hash = (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+    return 'book_' + hash;
   }
 }

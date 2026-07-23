@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BookOpen, Zap, Clock, Plus, Trash2, Play, Trophy, X, Sparkles, CheckCircle2 } from 'lucide-react';
 import { LibraryService } from '../../services/libraryService';
 
-export const LibraryModal = ({ isOpen, onClose, onSelectBook, onImportNewEpub, currentBookId }) => {
+export const LibraryModal = ({ isOpen, onClose, onSelectBook, onDeleteBook, onImportNewEpub, currentBookId }) => {
   const [library, setLibrary] = useState([]);
   const [stats, setStats] = useState({ todayMinutes: 0, totalMinutes: 0, streakDays: 1, dailyGoalMinutes: 30 });
 
@@ -19,7 +19,11 @@ export const LibraryModal = ({ isOpen, onClose, onSelectBook, onImportNewEpub, c
     e.stopPropagation();
     if (confirm('确定从书架中移除本书及其阅读进度吗？')) {
       LibraryService.removeBook(bookId);
-      setLibrary(LibraryService.getLibrary());
+      const remaining = LibraryService.getLibrary();
+      setLibrary(remaining);
+      if (onDeleteBook) {
+        onDeleteBook(bookId, remaining);
+      }
     }
   };
 

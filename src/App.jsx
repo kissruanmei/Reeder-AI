@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { DEMO_BOOK } from './assets/demoBook';
 import { EpubParser } from './services/epubParser';
 import { LibraryService } from './services/libraryService';
+import { BookStorage } from './services/bookStorage';
 import { Navbar } from './components/Navbar/Navbar';
 import { EpubReader } from './components/Reader/EpubReader';
 import { SelectionTooltip } from './components/Reader/SelectionTooltip';
@@ -58,6 +59,21 @@ export default function App() {
   useEffect(() => {
     const initBook = async () => {
       try {
+        const library = LibraryService.getLibrary();
+        if (library.length > 0) {
+          const lastBookMeta = library[0];
+          const storedBook = await BookStorage.getBookContent(lastBookMeta.id);
+          if (storedBook && storedBook.chapters?.length > 0) {
+            setBook(storedBook);
+            setCurrentBookId(storedBook.id);
+            const savedProgress = LibraryService.getProgress(storedBook.id);
+            if (savedProgress && typeof savedProgress.chapterIndex === 'number') {
+              setCurrentChapterIndex(Math.min(storedBook.chapters.length - 1, savedProgress.chapterIndex));
+            }
+            return;
+          }
+        }
+
         const res = await fetch('./义妹生活-第一卷-迷糊轻小说 (三河ごーすと) (z-library.sk, 1lib.sk, z-lib.sk).epub');
         if (res.ok) {
           const buffer = await res.arrayBuffer();
@@ -66,6 +82,7 @@ export default function App() {
             const bookId = LibraryService.generateBookId(parsed.title, parsed.author);
             setCurrentBookId(bookId);
             LibraryService.saveBook({ id: bookId, ...parsed });
+            await BookStorage.saveBookContent(bookId, parsed);
 
             // Restore saved progress
             const savedProgress = LibraryService.getProgress(bookId);
@@ -74,15 +91,21 @@ export default function App() {
             }
 
             setBook(parsed);
+            return;
           }
         }
       } catch (e) {
-        // Fallback silently to DEMO_BOOK
-        const bookId = LibraryService.generateBookId(DEMO_BOOK.title, DEMO_BOOK.author);
-        setCurrentBookId(bookId);
-        LibraryService.saveBook({ id: bookId, ...DEMO_BOOK });
+        console.warn('Local init failed:', e);
       }
+
+      // Fallback silently to DEMO_BOOK
+      const bookId = LibraryService.generateBookId(DEMO_BOOK.title, DEMO_BOOK.author);
+      setCurrentBookId(bookId);
+      LibraryService.saveBook({ id: bookId, ...DEMO_BOOK });
+      await BookStorage.saveBookContent(bookId, DEMO_BOOK);
+      setBook(DEMO_BOOK);
     };
+
     initBook();
   }, []);
 
@@ -101,6 +124,7 @@ export default function App() {
       
       setCurrentBookId(bookId);
       LibraryService.saveBook({ id: bookId, ...parsedBook });
+      await BookStorage.saveBookContent(bookId, parsedBook);
 
       // Restore saved progress if available
       const savedProgress = LibraryService.getProgress(bookId);
@@ -231,11 +255,42 @@ export default function App() {
         isOpen={isLibraryOpen}
         onClose={() => setIsLibraryOpen(false)}
         currentBookId={currentBookId}
-        onSelectBook={(selectedBook) => {
+        onSelectBook={async (selectedBook) => {
+          if (!selectedBook || !selectedBook.id) return;
+
+          // Load full content from IndexedDB
+          const storedBook = await BookStorage.getBookContent(selectedBook.id);
+          if (storedBook && storedBook.chapters?.length > 0) {
+            setBook(storedBook);
+          }
+
           const savedProgress = LibraryService.getProgress(selectedBook.id);
           setCurrentBookId(selectedBook.id);
           if (savedProgress && typeof savedProgress.chapterIndex === 'number') {
-            setCurrentChapterIndex(savedProgress.chapterIndex);
+            const total = storedBook?.chapters?.length || selectedBook.totalChapters || 1;
+            setCurrentChapterIndex(Math.min(total - 1, savedProgress.chapterIndex));
+          } else {
+            setCurrentChapterIndex(0);
+          }
+        }}
+        onDeleteBook={async (deletedId, remainingLibrary) => {
+          if (deletedId === currentBookId) {
+            if (remainingLibrary.length > 0) {
+              const nextBookMeta = remainingLibrary[0];
+              const storedNext = await BookStorage.getBookContent(nextBookMeta.id);
+              if (storedNext && storedNext.chapters?.length > 0) {
+                setBook(storedNext);
+                setCurrentBookId(nextBookMeta.id);
+                const progress = LibraryService.getProgress(nextBookMeta.id);
+                setCurrentChapterIndex(progress?.chapterIndex || 0);
+                return;
+              }
+            }
+            // Fallback to DEMO_BOOK
+            const demoId = LibraryService.generateBookId(DEMO_BOOK.title, DEMO_BOOK.author);
+            setBook(DEMO_BOOK);
+            setCurrentBookId(demoId);
+            setCurrentChapterIndex(0);
           }
         }}
         onImportNewEpub={() => {

@@ -17,6 +17,14 @@ export const EpubReader = ({
   hasNext
 }) => {
   const contentRef = useRef(null);
+  const mainRef = useRef(null);
+
+  // Reset scroll position to top on chapter change
+  useEffect(() => {
+    if (mainRef.current) {
+      mainRef.current.scrollTop = 0;
+    }
+  }, [currentChapterIndex, chapter?.id]);
 
   // Handle Text Selection inside Reader Canvas
   const handleMouseUp = (e) => {
@@ -70,6 +78,7 @@ export const EpubReader = ({
 
   return (
     <main
+      ref={mainRef}
       style={{
         flex: 1,
         height: 'calc(100vh - 56px)',

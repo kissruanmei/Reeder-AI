@@ -70,7 +70,7 @@ npm run electron:dev
 npm run dist:exe
 ```
 
-打包完成后，即可在 `release/` 目录下找到生成的绿色免安装单文件 `Reeder AI 1.0.0.exe`。
+打包完成后，即可在 `release/` 目录下找到生成的绿色免安装单文件 `Reeder AI 1.0.1.exe`。
 
 ---
 

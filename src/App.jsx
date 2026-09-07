@@ -14,6 +14,7 @@ import { ImageLightbox } from './components/Reader/ImageLightbox';
 import { LibraryModal } from './components/Library/LibraryModal';
 import { LibraryHome } from './components/Library/LibraryHome';
 import { calculateProgressPercent } from './services/progress';
+import { MusicPlayer } from './components/Music/MusicPlayer';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('library');
@@ -42,7 +43,7 @@ export default function App() {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [isTypographyOpen, setIsTypographyOpen] = useState(false);
-  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(true);
+  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
 
   // Sync theme to root DOM
@@ -259,6 +260,9 @@ export default function App() {
         hasPrev={currentChapterIndex > 0}
         hasNext={currentChapterIndex < book.chapters.length - 1}
       />
+
+      {/* Draggable local music companion — reader view only */}
+      <MusicPlayer />
 
       {/* Floating Selection Tooltip */}
       {selectedText && selectionPos && (

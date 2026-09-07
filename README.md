@@ -18,6 +18,12 @@
   - 内置 **Paper (羊皮纸)**、**Classic White (羊脂白)**、**OLED Dark (暗夜黑)**、**Sepia (墨绿护眼)**、**Nordic Slate (北欧灰)** 以及 **Solarized Warm (暖阳)** 六款主题，一键无缝切换。
   - 支持 `(Aa)` 排版调节：动态控制字号 (12px - 32px)、字体风格（Serif 衬线体 / Sans-serif 无衬线 / Mono 等宽）、行间距与版心最大宽度。
 
+- 🎵 **阅读页伴读音乐播放器**
+  - 支持导入 MP3、WAV、M4A、FLAC、OGG，本地播放列表与音频文件均保存在设备的 IndexedDB 中。
+  - 提供播放/暂停、进度拖动、音量、上一首/下一首、列表循环、单曲循环和随机播放。
+  - 可拖拽、折叠并记忆位置；Canvas 粒子通过 Web Audio 频谱随低频鼓点呼吸，暂停时保持安静漂浮。
+  - MP3 会尝试读取标题、歌手、专辑与内嵌封面；其余情况下使用文件名和默认夜空封面。
+
 - 💡 **划词 / 划句 Selection Tooltip 交互**
   - 在阅读区鼠标拖选文本，即刻唤起 Apple 风格悬浮菜单：
     - `[ 💡 解释 ]` 结合上下文分析难词/概念。
@@ -76,7 +82,7 @@ npm run electron:dev
 npm run dist:exe
 ```
 
-打包完成后，即可在 `release/` 目录下找到生成的绿色免安装单文件 `Reeder AI 1.1.0.exe`。
+打包完成后，即可在 `release/` 目录下找到生成的绿色免安装单文件 `Reeder AI 1.2.0.exe`。
 
 ---
 

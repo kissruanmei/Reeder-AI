@@ -18,6 +18,7 @@ build/
 
 # Temp & Scratch files
 .agents/
+design-qa.md
 scratch/
 *.epub
 test_*.png

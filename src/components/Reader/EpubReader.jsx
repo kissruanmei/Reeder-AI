@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { calculateProgressPercent } from '../../services/progress';
 
 export const EpubReader = ({
   chapter,
@@ -74,7 +75,7 @@ export const EpubReader = ({
   };
 
   // Progress calculations
-  const progressPercent = Math.min(100, Math.round(((currentChapterIndex + 1) / (totalChapters || 1)) * 100));
+  const progressPercent = calculateProgressPercent(currentChapterIndex, totalChapters);
 
   return (
     <main

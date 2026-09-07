@@ -1,12 +1,14 @@
 import React, { useRef } from 'react';
-import { BookOpen, Type, Sparkles, Settings, FolderOpen, Library } from 'lucide-react';
+import { BookOpen, Type, Sparkles, Settings, FolderOpen, Library, LayoutGrid } from 'lucide-react';
 import { ReederLogo } from '../Logo/ReederLogo';
+import { SUPPORTED_BOOK_ACCEPT } from '../../services/bookFormats';
 
 export const Navbar = ({
   bookTitle,
   author,
   progressPercent,
   onOpenLibrary,
+  onGoHome,
   onOpenToc,
   onOpenTypography,
   onToggleAiSidebar,
@@ -42,14 +44,20 @@ export const Navbar = ({
     >
       {/* Left: Brand Logo, Library, File Import & TOC */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <ReederLogo size={28} showText={true} />
+        <button onClick={onGoHome} title="返回完整书库" style={{ borderRadius: 'var(--radius-sm)' }}>
+          <ReederLogo size={28} showText={true} />
+        </button>
         <div style={{ width: '1px', height: '18px', background: 'var(--border-color)' }} />
+
+        <button onClick={onGoHome} className="btn-icon" title="返回完整书库">
+          <LayoutGrid size={18} />
+        </button>
 
         <button
           onClick={onOpenLibrary}
           className={`btn-secondary ${isLibraryOpen ? 'active' : ''}`}
           style={{ padding: '6px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
-          title="打开我的书架与阅读打卡仪表盘"
+          title="快速切换最近阅读的书籍"
         >
           <Library size={16} style={{ color: 'var(--accent-color)' }} />
           <span>书架</span>
@@ -58,7 +66,7 @@ export const Navbar = ({
         <input
           type="file"
           ref={fileInputRef}
-          accept=".epub"
+          accept={SUPPORTED_BOOK_ACCEPT}
           onChange={handleFileChange}
           style={{ display: 'none' }}
         />
@@ -66,7 +74,7 @@ export const Navbar = ({
         <button
           onClick={() => fileInputRef.current?.click()}
           className="btn-icon"
-          title="打开本地 EPUB 电子书"
+          title="导入本地电子书或文档"
         >
           <FolderOpen size={18} />
         </button>

@@ -3,6 +3,7 @@
  */
 
 import { BookStorage } from './bookStorage';
+import { calculateProgressPercent } from './progress';
 
 const STORAGE_LIBRARY_KEY = 'reeder_ai_library';
 const STORAGE_STATS_KEY = 'reeder_ai_stats';
@@ -37,6 +38,8 @@ export class LibraryService {
         title: bookData.title,
         author: bookData.author || '未知作者',
         cover: bookData.cover || null,
+        format: bookData.format || (existingIdx !== -1 ? library[existingIdx].format : 'EPUB'),
+        fileName: bookData.fileName || (existingIdx !== -1 ? library[existingIdx].fileName : ''),
         totalChapters: bookData.chapters?.length || 1,
         addedAt: existingIdx !== -1 ? library[existingIdx].addedAt : Date.now(),
         lastReadAt: Date.now()
@@ -52,6 +55,22 @@ export class LibraryService {
       return bookEntry;
     } catch (e) {
       console.error('Failed to save book to library:', e);
+    }
+  }
+
+  /**
+   * Mark a book as recently opened without changing its stored metadata.
+   */
+  static touchBook(bookId) {
+    if (!bookId) return;
+    try {
+      const library = this.getLibrary();
+      const bookIdx = library.findIndex(b => b.id === bookId);
+      if (bookIdx === -1) return;
+      library[bookIdx].lastReadAt = Date.now();
+      localStorage.setItem(STORAGE_LIBRARY_KEY, JSON.stringify(library));
+    } catch (e) {
+      console.error('Failed to update recent book:', e);
     }
   }
 
@@ -75,7 +94,7 @@ export class LibraryService {
   static saveProgress(bookId, chapterIndex, totalChapters, scrollRatio = 0) {
     if (!bookId) return;
     try {
-      const progressPercent = Math.min(100, Math.round(((chapterIndex + 1) / totalChapters) * 100));
+      const progressPercent = calculateProgressPercent(chapterIndex, totalChapters);
       const progressData = {
         bookId,
         chapterIndex,

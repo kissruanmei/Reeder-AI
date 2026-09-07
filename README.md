@@ -1,12 +1,18 @@
 # 📖 Reeder AI - 智能电子书阅读器 (Desktop App)
 
 <p align="center">
-  <b>兼具 Apple Books 级极致优雅排版设计与第三方大模型 API Key 划词/划句辅助阅读的桌面电子书客户端</b>
+  <b>兼具优雅排版、多格式本地书库与第三方大模型划词辅助阅读的桌面客户端</b>
 </p>
 
 ---
 
 ## ✨ 核心特性
+
+- 📚 **常见电子书与文档格式导入**
+  - 电子书：EPUB、MOBI、AZW/AZW3、FB2。
+  - 文档：TXT、PDF、HTML/HTM、Markdown、DOCX、RTF。
+  - 漫画：CBZ。
+  - Kindle 与 PDF 文件需无 DRM/密码保护；扫描版 PDF 暂不提供 OCR。
 
 - 📖 **Apple Books 级设计与 6 大预设主题**
   - 内置 **Paper (羊皮纸)**、**Classic White (羊脂白)**、**OLED Dark (暗夜黑)**、**Sepia (墨绿护眼)**、**Nordic Slate (北欧灰)** 以及 **Solarized Warm (暖阳)** 六款主题，一键无缝切换。

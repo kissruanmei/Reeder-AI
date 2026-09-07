@@ -36,6 +36,8 @@ export class BookStorage {
           title: bookData.title,
           author: bookData.author,
           cover: bookData.cover,
+          format: bookData.format || 'EPUB',
+          fileName: bookData.fileName || '',
           chapters: bookData.chapters,
           updatedAt: Date.now()
         };

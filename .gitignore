@@ -17,6 +17,7 @@ release/
 build/
 
 # Temp & Scratch files
+.agents/
 scratch/
 *.epub
 test_*.png

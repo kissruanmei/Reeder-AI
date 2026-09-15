@@ -7,6 +7,7 @@ import { MiniPlayer } from './MiniPlayer';
 import { PlayerControls } from './PlayerControls';
 import { PlaylistPanel } from './PlaylistPanel';
 import { ProgressBar } from './ProgressBar';
+import { hasPointerMoved } from '../../services/musicUtils';
 
 const POSITION_KEY = 'reeder_music_position';
 const COLLAPSED_KEY = 'reeder_music_collapsed';
@@ -41,6 +42,7 @@ export function MusicPlayer() {
   const dragRef = useRef(null);
   const positionRef = useRef(null);
   const noticeTimerRef = useRef(0);
+  const suppressClickUntilRef = useRef(0);
   const [position, setPosition] = useState(() => readSavedPosition() || defaultPosition());
   const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === 'true');
   const [playlistOpen, setPlaylistOpen] = useState(false);
@@ -78,22 +80,29 @@ export function MusicPlayer() {
     if (isCollapsed) setPlaylistOpen(false);
   }, [isCollapsed]);
 
-  const startDrag = (event) => {
-    if (event.button !== 0 || event.target.closest('button, input')) return;
+  const startDrag = (event, allowControls = false) => {
+    if (event.button !== 0 || (!allowControls && event.target.closest('button, input'))) return;
     dragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
       originX: position.x,
-      originY: position.y
+      originY: position.y,
+      captureElement: event.currentTarget,
+      moved: false
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
-    document.body.classList.add('music-player-dragging');
   };
 
   const moveDrag = (event) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
+    if (!drag.moved && !hasPointerMoved(drag.startX, drag.startY, event.clientX, event.clientY)) return;
+    if (!drag.moved) {
+      drag.moved = true;
+      drag.captureElement.setPointerCapture(event.pointerId);
+      document.body.classList.add('music-player-dragging');
+    }
+    event.preventDefault();
     const next = clampPosition({
       x: drag.originX + event.clientX - drag.startX,
       y: drag.originY + event.clientY - drag.startY
@@ -107,10 +116,20 @@ export function MusicPlayer() {
     if (!drag || drag.pointerId !== event.pointerId) return;
     dragRef.current = null;
     document.body.classList.remove('music-player-dragging');
+    if (drag.moved) {
+      suppressClickUntilRef.current = performance.now() + 75;
+    }
     const finalPosition = clampPosition(positionRef.current || position, rootRef.current);
     positionRef.current = finalPosition;
     setPosition(finalPosition);
     localStorage.setItem(POSITION_KEY, JSON.stringify(finalPosition));
+  };
+
+  const suppressClickAfterDrag = (event) => {
+    if (performance.now() > suppressClickUntilRef.current) return;
+    suppressClickUntilRef.current = 0;
+    event.preventDefault();
+    event.stopPropagation();
   };
 
   const syncSystemMedia = async () => {
@@ -126,10 +145,11 @@ export function MusicPlayer() {
         ref={rootRef}
         className="music-player-shell compact"
         style={{ left: position.x, top: position.y }}
-        onPointerDown={startDrag}
+        onPointerDown={(event) => startDrag(event, true)}
         onPointerMove={moveDrag}
         onPointerUp={finishDrag}
         onPointerCancel={finishDrag}
+        onClickCapture={suppressClickAfterDrag}
       >
         <AudioVisualizer analyser={player.analyser} isPlaying={player.isPlaying} compact />
         <MiniPlayer track={player.currentTrack} isPlaying={player.isPlaying} onTogglePlay={player.togglePlay} onExpand={() => setIsCollapsed(false)} />

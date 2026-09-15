@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatAudioTime, getAdjacentTrackIndex, parseTrackName, PLAY_MODES } from '../src/services/musicUtils.js';
+import { formatAudioTime, getAdjacentTrackIndex, hasPointerMoved, parseTrackName, PLAY_MODES } from '../src/services/musicUtils.js';
 
 test('audio time is formatted safely', () => {
   assert.equal(formatAudioTime(0), '0:00');
@@ -24,4 +24,9 @@ test('playlist navigation wraps and shuffle avoids the current track', () => {
   assert.equal(getAdjacentTrackIndex(2, 3, 1, PLAY_MODES.LIST), 0);
   assert.equal(getAdjacentTrackIndex(1, 3, 1, PLAY_MODES.SHUFFLE, 0), 2);
   assert.notEqual(getAdjacentTrackIndex(1, 3, 1, PLAY_MODES.SHUFFLE, 0.9), 1);
+});
+
+test('compact player distinguishes a click from a drag', () => {
+  assert.equal(hasPointerMoved(100, 100, 103, 103), false);
+  assert.equal(hasPointerMoved(100, 100, 106, 100), true);
 });

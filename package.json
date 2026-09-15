@@ -1,7 +1,7 @@
 {
   "name": "reeder-ai",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.2.1",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "test": "node --test",
     "lint": "eslint .",
     "preview": "vite preview",
-    "dist:exe": "vite build && electron-builder --win -c.win.target=portable -c.win.signAndEditExecutable=false"
+    "dist:exe": "vite build && electron-builder --win -c.win.target=portable"
   },
   "dependencies": {
     "@lingo-reader/fb2-parser": "^0.4.6",
@@ -26,6 +26,7 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
     "@vitejs/plugin-react": "^4.2.1",
@@ -37,6 +38,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^14.0.0",
     "vite": "^5.1.6",
     "wait-on": "^7.2.0"
   },
@@ -52,8 +54,9 @@
     ],
     "win": {
       "target": "portable",
+      "icon": "public/icon.ico",
       "verifyUpdateCodeSignature": false,
-      "signAndEditExecutable": false
+      "signAndEditExecutable": true
     }
   }
 }

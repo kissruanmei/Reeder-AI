@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DEMO_BOOK } from './assets/demoBook';
 import { DocumentParser } from './services/documentParser';
 import { LibraryService } from './services/libraryService';

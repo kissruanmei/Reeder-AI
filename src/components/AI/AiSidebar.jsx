@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, X, Send, Bot, User, Trash2, Copy, Check, RefreshCw, MessageSquare, Quote } from 'lucide-react';
+import { Sparkles, X, Send, Bot, User, Trash2, Copy, Check, RefreshCw, Quote } from 'lucide-react';
 import { LLMService } from '../../services/llmService';
 
 export const AiSidebar = ({ isOpen, onClose, selectedText, promptAction, onClearSelectedText }) => {
@@ -17,7 +17,7 @@ export const AiSidebar = ({ isOpen, onClose, selectedText, promptAction, onClear
   const scrollContainerRef = useRef(null);
 
   // Auto scroll to bottom
-  const scrollToBottom = () => {
+  useEffect(() => {
     if (!scrollContainerRef.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       return;
@@ -28,10 +28,6 @@ export const AiSidebar = ({ isOpen, onClose, selectedText, promptAction, onClear
     if (isNearBottom || !isStreaming) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-
-  useEffect(() => {
-    scrollToBottom();
   }, [messages, isStreaming]);
 
   // React to incoming text selection prompt action
@@ -39,6 +35,9 @@ export const AiSidebar = ({ isOpen, onClose, selectedText, promptAction, onClear
     if (selectedText && promptAction) {
       handlePromptAction(promptAction, selectedText);
     }
+    // Only a new external selection should trigger an AI request. Including the
+    // request handler would resend when its message/streaming state changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedText, promptAction]);
 
   const handlePromptAction = (action, text) => {
@@ -88,12 +87,9 @@ export const AiSidebar = ({ isOpen, onClose, selectedText, promptAction, onClear
       .filter(m => m.id !== 'init-msg')
       .map(m => ({ role: m.role, content: m.content }));
 
-    let currentResponse = '';
-
     await LLMService.streamChat({
       messages: apiMessages,
-      onChunk: (chunk, fullText) => {
-        currentResponse = fullText;
+      onChunk: (_chunk, fullText) => {
         setMessages(prev =>
           prev.map(m => m.id === assistantId ? { ...m, content: fullText } : m)
         );

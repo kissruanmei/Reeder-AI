@@ -55,10 +55,6 @@ export class EpubParser {
                    null;
       }
 
-      // Load navigation (TOC)
-      const navigation = await book.loaded.navigation;
-      const toc = navigation.toc || [];
-
       // Extract spine items (chapters)
       const spine = book.spine;
       const chapters = [];

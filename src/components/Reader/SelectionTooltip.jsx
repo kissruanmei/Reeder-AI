@@ -1,7 +1,7 @@
 import React from 'react';
 import { Lightbulb, Languages, FileText, MessageSquare, Highlighter } from 'lucide-react';
 
-export const SelectionTooltip = ({ position, selectedText, onAction, onClose }) => {
+export const SelectionTooltip = ({ position, selectedText, onAction }) => {
   if (!position || !selectedText) return null;
 
   const tooltipStyle = {

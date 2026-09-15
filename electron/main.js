@@ -8,13 +8,18 @@ const __dirname = path.dirname(__filename);
 let mainWindow;
 
 function createWindow() {
+  const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
+  const iconPath = isDev
+    ? path.join(__dirname, '../public/icon.png')
+    : path.join(__dirname, '../dist/icon.png');
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 800,
     minHeight: 600,
     title: 'Reeder AI - 智能电子书阅读器',
-    icon: path.join(__dirname, '../public/icon.png'),
+    icon: iconPath,
     show: false,
     autoHideMenuBar: true,
     webPreferences: {
@@ -23,9 +28,6 @@ function createWindow() {
       webSecurity: false // Allow loading local file blobs and CORS for user-configured custom AI endpoints
     }
   });
-
-  // Check if running in development mode
-  const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:3000');

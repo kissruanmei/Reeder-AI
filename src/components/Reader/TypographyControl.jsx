@@ -1,5 +1,5 @@
 import React from 'react';
-import { Type, Minus, Plus, AlignLeft, Check } from 'lucide-react';
+import { Minus, Plus, Check } from 'lucide-react';
 
 export const THEMES = [
   { id: 'paper', name: '羊皮纸', bg: '#f7f4ed', fg: '#2c2925', border: '#eee9dd' },
@@ -26,8 +26,7 @@ export const TypographyControl = ({
   lineHeight,
   setLineHeight,
   maxWidth,
-  setMaxWidth,
-  onClose
+  setMaxWidth
 }) => {
   return (
     <div

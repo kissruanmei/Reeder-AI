@@ -4,6 +4,10 @@ export const PLAY_MODES = {
   SHUFFLE: 'shuffle'
 };
 
+export function hasPointerMoved(startX, startY, currentX, currentY, threshold = 5) {
+  return Math.hypot(currentX - startX, currentY - startY) >= threshold;
+}
+
 export function formatAudioTime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
   const wholeSeconds = Math.floor(seconds);

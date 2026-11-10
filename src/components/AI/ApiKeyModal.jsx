@@ -106,7 +106,7 @@ export const ApiKeyModal = ({ isOpen, onClose }) => {
           }}
         >
           <ShieldCheck size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-          <span>隐私保证：所有 API Key 仅加密保存在本地设备，不上传任何服务器。</span>
+          <span>API Key 保存在本机浏览器存储中，未加密。使用 AI 时，请求会直接发送至所选服务商。</span>
         </div>
 
         {/* Vendor Selector */}

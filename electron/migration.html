@@ -1,0 +1,43 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Reeder library migration</title>
+<script>
+  const token = location.pathname.slice(1);
+  const reply = (message) => window.opener.postMessage({ ...message, token }, '*');
+
+  async function readBookRecords() {
+    const databases = await indexedDB.databases();
+    if (!databases.some((database) => database.name === 'reeder_ai_db')) return [];
+    const database = await new Promise((resolve, reject) => {
+      const request = indexedDB.open('reeder_ai_db');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      if (!database.objectStoreNames.contains('book_contents')) return [];
+      return await new Promise((resolve, reject) => {
+        const request = database.transaction('book_contents', 'readonly').objectStore('book_contents').getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    } finally {
+      database.close();
+    }
+  }
+
+  window.addEventListener('message', async (event) => {
+    if (event.source !== window.opener || event.data?.type !== 'reeder-migration-request' || event.data.token !== token) return;
+    try {
+      const values = {};
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index);
+        if (key && key.startsWith('reeder_')) values[key] = localStorage.getItem(key);
+      }
+      reply({ type: 'reeder-migration-data', values, books: await readBookRecords() });
+    } catch (error) {
+      reply({ type: 'reeder-migration-error' });
+    }
+  });
+
+  if (window.opener) reply({ type: 'reeder-migration-ready' });
+</script>

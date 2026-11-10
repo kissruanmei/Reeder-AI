@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Zap, Clock, Plus, Trash2, Play, Trophy, X, Sparkles, CheckCircle2 } from 'lucide-react';
 import { LibraryService } from '../../services/libraryService';
+import { BookCover } from './BookCover';
 
 export const LibraryModal = ({ isOpen, onClose, onSelectBook, onDeleteBook, onImportNewEpub, currentBookId }) => {
   const [library, setLibrary] = useState([]);
@@ -8,7 +9,7 @@ export const LibraryModal = ({ isOpen, onClose, onSelectBook, onDeleteBook, onIm
 
   useEffect(() => {
     if (isOpen) {
-      setLibrary(LibraryService.getLibrary());
+      setLibrary(LibraryService.getLibrary().sort((a, b) => (b.lastReadAt || b.addedAt || 0) - (a.lastReadAt || a.addedAt || 0)));
       setStats(LibraryService.getStats());
     }
   }, [isOpen]);
@@ -197,6 +198,15 @@ export const LibraryModal = ({ isOpen, onClose, onSelectBook, onDeleteBook, onIm
                 return (
                   <div
                     key={b.id}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                        event.preventDefault();
+                        onSelectBook(b);
+                        onClose();
+                      }
+                    }}
                     onClick={() => {
                       onSelectBook(b);
                       onClose();
@@ -217,28 +227,7 @@ export const LibraryModal = ({ isOpen, onClose, onSelectBook, onDeleteBook, onIm
                     }}
                   >
                     {/* Book Cover / Placeholder */}
-                    <div
-                      style={{
-                        width: '100%',
-                        height: '140px',
-                        borderRadius: 'var(--radius-sm)',
-                        overflow: 'hidden',
-                        background: 'var(--bg-secondary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative'
-                      }}
-                    >
-                      {b.cover ? (
-                        <img src={b.cover} alt={b.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <div style={{ textAlign: 'center', padding: '12px', color: 'var(--text-muted)' }}>
-                          <BookOpen size={32} style={{ margin: '0 auto 6px auto', opacity: 0.6 }} />
-                          <div style={{ fontSize: '11px', fontWeight: 600 }}>{b.title}</div>
-                        </div>
-                      )}
-
+                    <BookCover book={b} style={{ width: '100%', height: '140px' }}>
                       {/* Remove Button */}
                       <button
                         onClick={(e) => handleRemoveBook(e, b.id)}
@@ -257,7 +246,7 @@ export const LibraryModal = ({ isOpen, onClose, onSelectBook, onDeleteBook, onIm
                       >
                         <Trash2 size={13} />
                       </button>
-                    </div>
+                    </BookCover>
 
                     {/* Meta */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>

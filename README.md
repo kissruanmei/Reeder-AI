@@ -1,79 +1,74 @@
-# 📖 Reeder AI - 智能电子书阅读器 (Desktop App)
+# Reeder AI
 
-<p align="center">
-  <b>兼具 Apple Books 级极致优雅排版设计与第三方大模型 API Key 划词/划句辅助阅读的桌面电子书客户端</b>
-</p>
+Reeder AI 是一款基于 Electron 的 EPUB 桌面阅读器。它将本地图书、阅读进度和 AI 阅读助手放在一起，适合阅读电子书与带插图的轻小说。
 
----
+**当前发行版：[v0.01 · Windows 便携版](https://github.com/kissruanmei/Reeder-AI/releases/tag/v0.01)**
 
-## ✨ 核心特性
+![Reeder 首页：阅读统计、最近阅读、使用指南和施工区](docs/images/home.png)
 
-- 📖 **Apple Books 级设计与 6 大预设主题**
-  - 内置 **Paper (羊皮纸)**、**Classic White (羊脂白)**、**OLED Dark (暗夜黑)**、**Sepia (墨绿护眼)**、**Nordic Slate (北欧灰)** 以及 **Solarized Warm (暖阳)** 六款主题，一键无缝切换。
-  - 支持 `(Aa)` 排版调节：动态控制字号 (12px - 32px)、字体风格（Serif 衬线体 / Sans-serif 无衬线 / Mono 等宽）、行间距与版心最大宽度。
+> 截图中的书籍和阅读数据均为测试内容。
 
-- 💡 **划词 / 划句 Selection Tooltip 交互**
-  - 在阅读区鼠标拖选文本，即刻唤起 Apple 风格悬浮菜单：
-    - `[ 💡 解释 ]` 结合上下文分析难词/概念。
-    - `[ 🌐 翻译 ]` 地道流畅翻译长句段落。
-    - `[ 📝 摘要 ]` 快速提炼段落核心要点。
-    - `[ 💬 问 AI ]` 唤醒 AI 侧边栏发起自由追问。
-    - `[ 🖍️ 高亮 ]` 标记重点。
+## 下载与开始使用
 
-- 🤖 **第三方大模型 API Key 本地安全接入**
-  - 支持手动接入 **DeepSeek (V3/R1)**、**OpenAI (ChatGPT)**、**Moonshot (Kimi)**、**Qwen (通义千问)** 及 **Custom Endpoint (本地 Ollama)**。
-  - 内置 **【🧪 测试 API 连接】** 校验工具，实时测试 Endpoint 有效性。
-  - **隐私安全保证**：所有 API Key 仅保存在用户本地设备 (`localStorage`)，不经过任何中转服务器。
+1. 打开 [v0.01 发行页面](https://github.com/kissruanmei/Reeder-AI/releases/tag/v0.01)，下载 `reederV0.01.exe`。
+2. 在 Windows 上双击运行。程序为便携版，无需安装。
+3. 在首页点击 **导入书籍**，选择本地 EPUB 文件。阅读时可以通过目录和页面底部按钮切换章节。
+4. 首页的 **查看指南** 提供图书管理、排版与 AI 助手的操作说明。
 
-- 🖼️ **轻小说 / EPUB 插图嵌入与全屏放大灯箱 (Lightbox)**
-  - **Blob URL 提取**：自动解包 EPUB 内部插图与封面路径，完美解决轻小说插图裂图问题。
-  - **大图灯箱**：点击正文中任意插画即可唤起高质感毛玻璃全屏灯箱，支持放大、缩小、还原、一键下载保存原图及 `ESC` 退出。
+## 主要功能
 
-- 📚 **我的书架与阅读进度记忆**
-  - **进度自动追踪**：自动记录每本书的最近阅读章节与位置，重新打开软件或切换书籍时，**自动定位恢复至上一次读到的精准位置**。
-  - **阅读打卡仪表盘**：实时统计今日阅读分钟数、连续打卡天数与历史累计阅读时长，带来极具仪式感的阅读习惯陪伴。
+- **首页与书架**：查看累计阅读时间、今日阅读时间、图书数量和连续阅读天数；首页展示最近阅读的图书及进度，完整书架可查看和管理全部图书。
+- **按书保存进度**：新书从第一章开始，再次打开已读图书时恢复该书上次阅读的章节。进度百分比按章节计算，不代表章节内的精确滚动位置。
+- **阅读排版**：提供六种主题，并支持调整字号、字体、行距和正文宽度。
+- **EPUB 插图**：显示电子书内的封面和插图；点击正文插图可放大查看。
+- **AI 阅读助手**：配置兼容的模型服务后，可对选中文本进行解释、翻译、摘要或继续提问，也可在侧栏自由对话。内置 DeepSeek、OpenAI、Moonshot、Qwen 和自定义端点选项。
 
-- 🖥️ **打包为 Windows .exe 应用程序**
-  - 基于 React 18 + Vite + Electron + JSZip 架构，支持一键打包为免安装的单文件 `.exe` 可执行包。
+## 本地数据与旧版迁移
 
----
+书籍、阅读进度和统计数据保存在本机浏览器存储中；新导入的 EPUB 原文件也会保存在本机，供下次打开时恢复封面和插图。数据不会自动在不同设备之间同步。
 
-## 🛠️ 本地开发与运行指南
+从此前使用 `http://localhost:3000` 的 Electron 开发版切换到便携版时，程序会尝试一次性迁移该版的本地书架和统计，已有的新版数据不会被覆盖。迁移时请先关闭占用 3000 端口的开发服务器，再启动便携版。旧版若没有保存原始 EPUB，封面或插图可能缺失；重新导入同一本书可恢复这些内容，并保留该书已有的章节进度。
 
-### 1. 克隆仓库与安装依赖
+API Key 保存在本机 `localStorage` 中，**未加密**。使用 AI 助手时，选中的文本和对话内容会发送到所配置的模型服务商或自定义端点；请自行确认所用服务的隐私政策和费用。
+
+## 本地开发
+
+需要 Node.js、npm 和 Windows（Windows 打包需要 Windows 环境）。
 
 ```bash
-git clone https://github.com/your-username/Reeder-AI.git
+git clone https://github.com/kissruanmei/Reeder-AI.git
 cd Reeder-AI
-
-# 安装项目依赖
-npm install
+npm ci
 ```
 
-### 2. 启动 Web 开发服务器
+启动浏览器开发服务器：
 
 ```bash
 npm run dev
 ```
 
-在浏览器中打开 `http://localhost:3000` 即可开始预览体验。
-
-### 3. 启动 Electron 桌面客户端开发模式
+访问 `http://localhost:3000`。启动 Electron 桌面开发版：
 
 ```bash
 npm run electron:dev
 ```
 
-### 4. 打包为 Windows 独立 .exe 可执行软件
+Windows 用户也可运行项目根目录下的 `启动 Reeder AI.bat`。构建前端或打包便携版：
 
 ```bash
+npm run build
 npm run dist:exe
 ```
 
-打包完成后，即可在 `release/` 目录下找到生成的绿色免安装单文件 `Reeder AI 1.0.0.exe`。
+打包产物位于 `release/reederV0.01.exe`。发行标签 `v0.01` 与 `package.json` 中沿用的历史内部版本号分别管理。
 
----
+## 未来计划
 
-## 📄 开源许可
+以下功能目前处于规划阶段，尚未实现：
 
-[MIT License](LICENSE)
+- 自定义壁纸，并探索与 Wallpaper Engine 动态壁纸同步。
+- 内置音乐播放器，为阅读提供沉浸式背景音乐。
+
+## 许可证
+
+仓库目前未包含独立许可证文件；使用或再分发前请联系项目作者确认授权。

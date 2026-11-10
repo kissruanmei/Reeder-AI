@@ -6,6 +6,7 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
+    "electron:dev": "concurrently -k -s first \"npm run dev -- --strictPort\" \"wait-on http-get://localhost:3000 && electron . --dev\"",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -31,6 +32,7 @@
   "build": {
     "appId": "com.reeder.ai",
     "productName": "Reeder AI",
+    "artifactName": "reederV0.01.${ext}",
     "directories": {
       "output": "release"
     },

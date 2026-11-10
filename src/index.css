@@ -251,6 +251,17 @@ button {
   animation: fadeIn 0.2s ease-out;
 }
 
+/* Keep the reading canvas clear of the open AI sidebar on desktop. */
+.reader-canvas {
+  width: 100%;
+}
+
+@media (min-width: 760px) {
+  .reader-canvas-with-ai {
+    width: calc(100% - 380px);
+  }
+}
+
 /* Reader Canvas Images Styling - Apple Books & Light Novel Illustrations */
 .reader-content img,
 .reader-content image,

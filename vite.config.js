@@ -10,6 +10,10 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: false
+    open: false,
+    watch: {
+      // Generated artifacts can be large or locked while the portable app runs.
+      ignored: ['**/dist/**', '**/release/**', '**/scratch/**', '**/*.exe', '**/*.pptx']
+    }
   }
 })

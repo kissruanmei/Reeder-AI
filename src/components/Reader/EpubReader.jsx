@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 
 export const EpubReader = ({
   chapter,
+  isAiSidebarOpen,
   currentChapterIndex,
   totalChapters,
   fontSize,
@@ -79,6 +80,7 @@ export const EpubReader = ({
   return (
     <main
       ref={mainRef}
+      className={`reader-canvas${isAiSidebarOpen ? ' reader-canvas-with-ai' : ''}`}
       style={{
         flex: 1,
         height: 'calc(100vh - 56px)',

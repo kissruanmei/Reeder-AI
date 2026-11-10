@@ -24,9 +24,18 @@ export class BookStorage {
   /**
    * Save parsed book full content (chapters, HTML) to IndexedDB
    */
-  static async saveBookContent(bookId, bookData) {
+  static async saveBookContent(bookId, bookData, sourceFile = null) {
     if (!bookId || !bookData) return;
     try {
+      let coverBlob = null;
+      if (typeof bookData.cover === 'string' && bookData.cover.startsWith('blob:')) {
+        try {
+          const response = await fetch(bookData.cover);
+          if (response.ok) coverBlob = await response.blob();
+        } catch (error) {
+          console.warn('Failed to persist book cover:', error);
+        }
+      }
       const db = await openDB();
       return new Promise((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -36,6 +45,8 @@ export class BookStorage {
           title: bookData.title,
           author: bookData.author,
           cover: bookData.cover,
+          coverBlob,
+          sourceFile,
           chapters: bookData.chapters,
           updatedAt: Date.now()
         };

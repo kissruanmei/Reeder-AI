@@ -33,7 +33,7 @@ API Key 保存在本机 `localStorage` 中，**未加密**。使用 AI 助手时
 
 ## 本地开发
 
-需要 Node.js、npm 和 Windows（Windows 打包需要 Windows 环境）。
+需要 Node.js 和 npm；构建 Windows 便携版建议使用 Windows。
 
 ```bash
 git clone https://github.com/kissruanmei/Reeder-AI.git
@@ -71,4 +71,4 @@ npm run dist:exe
 
 ## 许可证
 
-仓库目前未包含独立许可证文件；使用或再分发前请联系项目作者确认授权。
+项目原 README 声明采用 MIT 许可证，但仓库目前未包含独立的 LICENSE 文件。

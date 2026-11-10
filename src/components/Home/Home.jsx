@@ -90,7 +90,7 @@ export const Home = ({ library, stats, onSelectBook, onOpenLibrary, onOpenGuide,
             <div className="roadmap-list">
               <div className="roadmap-item">
                 <Image size={23} strokeWidth={1.8} aria-hidden="true" />
-                <div><strong>自定义与动态壁纸</strong><p>支持自定义壁纸，并计划同步 Wallpaper Engine 动态壁纸。</p></div>
+                <div><strong>自定义壁纸</strong><p>计划支持从本地选择图片作为阅读背景。</p></div>
                 <span>计划中</span>
               </div>
               <div className="roadmap-item">

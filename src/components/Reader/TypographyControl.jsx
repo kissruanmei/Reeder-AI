@@ -27,6 +27,14 @@ export const TypographyControl = ({
   setLineHeight,
   maxWidth,
   setMaxWidth,
+  wallpaperEnabled,
+  wallpaperTitle,
+  wallpaperMissing,
+  wallpaperShade,
+  wallpaperAvailable,
+  onWallpaperEnabledChange,
+  onWallpaperShadeChange,
+  onOpenWallpaper,
   onClose
 }) => {
   return (
@@ -37,6 +45,8 @@ export const TypographyControl = ({
         top: '56px',
         right: '80px',
         width: '320px',
+        maxHeight: 'calc(100vh - 70px)',
+        overflowY: 'auto',
         padding: '18px',
         borderRadius: 'var(--radius-lg)',
         boxShadow: 'var(--shadow-lg)',
@@ -187,6 +197,22 @@ export const TypographyControl = ({
             style={{ width: '100%', accentColor: 'var(--accent-color)' }}
           />
         </div>
+      </div>
+
+      <div className="wallpaper-setting">
+        <div className="wallpaper-setting-heading">
+          <span>Wallpaper Engine 壁纸</span>
+          <button type="button" className="btn-secondary" onClick={onOpenWallpaper} disabled={!wallpaperAvailable}>选择壁纸</button>
+        </div>
+        <label className="wallpaper-setting-toggle">
+          <span>启用阅读背景</span>
+          <input type="checkbox" checked={wallpaperEnabled} disabled={!wallpaperAvailable || (!wallpaperTitle && !wallpaperEnabled)} onChange={event => onWallpaperEnabledChange(event.target.checked)} />
+        </label>
+        <p className="wallpaper-setting-note" title={wallpaperTitle || ''}>{wallpaperAvailable ? (wallpaperTitle || (wallpaperMissing ? '上次选择的壁纸不可用，请重新选择' : '请选择已安装的壁纸')) : '请在 Reeder 桌面版使用'}</p>
+        <label className="wallpaper-shade-label" htmlFor="wallpaper-shade">
+          <span>正文遮罩</span><span>{wallpaperShade}%</span>
+        </label>
+        <input id="wallpaper-shade" className="wallpaper-shade-range" type="range" min="60" max="100" step="1" value={wallpaperShade} disabled={!wallpaperEnabled} onChange={event => onWallpaperShadeChange(Number(event.target.value))} />
       </div>
     </div>
   );

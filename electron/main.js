@@ -4,11 +4,14 @@ import { readFile } from 'fs/promises';
 import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { setupWallpaper } from './wallpaper.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let mainWindow;
+let wallpaper;
+let quitting = false;
 
 // Development builds used localhost:3000 for storage. A short-lived, local
 // helper lets the packaged app copy those records without changing the source.
@@ -56,6 +59,7 @@ async function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'preload.cjs'),
       webSecurity: false // Allow loading local file blobs and CORS for user-configured custom AI endpoints
     }
   });
@@ -79,12 +83,29 @@ async function createWindow() {
     mainWindow.show();
   });
 
+  mainWindow.on('minimize', () => wallpaper.stop());
+  mainWindow.on('hide', () => wallpaper.stop());
+  mainWindow.webContents.on('render-process-gone', () => wallpaper.stop());
+  mainWindow.webContents.on('did-start-navigation', (_event, _url, isInPlace, isMainFrame) => {
+    if (isMainFrame && !isInPlace) wallpaper.stop();
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  wallpaper = setupWallpaper(() => mainWindow);
+  return createWindow();
+});
+
+app.on('before-quit', (event) => {
+  if (quitting || !wallpaper) return;
+  event.preventDefault();
+  quitting = true;
+  wallpaper.stop().finally(() => app.quit());
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

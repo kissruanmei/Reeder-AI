@@ -282,10 +282,14 @@ export default function App() {
   const currentChapter = book?.chapters?.[chapterIndex] || book?.chapters?.[0];
   const progressPercent = book ? Math.min(100, Math.round(((chapterIndex + 1) / book.chapters.length) * 100)) : 0;
   const chooseFile = () => fileInputRef.current?.click();
+  const hasWallpaper = Boolean(wallpaperSettings.enabled && wallpaperImage.url);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', '--ai-sidebar-width': `${aiSidebarWidth}px` }}>
-      {wallpaperSettings.enabled && wallpaperImage.url && (
+    <div
+      className={hasWallpaper ? 'has-wallpaper' : undefined}
+      style={{ width: '100vw', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', '--ai-sidebar-width': `${aiSidebarWidth}px` }}
+    >
+      {hasWallpaper && (
         <WallpaperBackdrop imageUrl={wallpaperImage.url} opacity={wallpaperSettings.opacity} />
       )}
       <input

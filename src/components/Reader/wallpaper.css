@@ -14,6 +14,14 @@
   transition: opacity var(--transition-fast);
 }
 
+/* 启用全局壁纸时让顶部导航栏透明融入背景，消除顶部分割感 */
+.has-wallpaper .glass-header {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom-color: var(--border-subtle);
+}
+
 .wallpaper-popover {
   position: fixed;
   top: 64px;

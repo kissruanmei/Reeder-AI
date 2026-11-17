@@ -1,11 +1,11 @@
 import React from 'react';
-import { BookOpen, FolderOpen, Library, Plus, Settings, Sparkles, Type } from 'lucide-react';
+import { BookOpen, FolderOpen, Image as ImageIcon, Library, Music2, Plus, Settings, Type } from 'lucide-react';
 import { ReederLogo } from '../Logo/ReederLogo';
 
 export const Navbar = ({
   isHome, bookTitle, author, progressPercent, onGoHome, onOpenLibrary, onImport,
-  onOpenToc, onOpenTypography, onToggleAiSidebar, onOpenApiKeyModal,
-  isAiSidebarOpen, isTypographyOpen, isTocOpen
+  onOpenToc, onOpenTypography, onOpenApiKeyModal, onToggleMusicPicker, onToggleWallpaper,
+  isTypographyOpen, isTocOpen, isMusicPickerOpen, isWallpaperOpen
 }) => (
   <header className={`glass-header app-navbar${isHome ? ' app-navbar-home' : ''}`}>
     <div className="navbar-group">
@@ -30,11 +30,12 @@ export const Navbar = ({
         <button onClick={onImport} className="btn-primary navbar-import"><Plus size={17} /> 导入书籍</button>
       ) : (
         <>
+          <button type="button" onClick={onToggleMusicPicker} className={`btn-icon${isMusicPickerOpen ? ' active' : ''}`} title="阅读音乐" aria-label="阅读音乐" aria-expanded={isMusicPickerOpen} aria-controls={isMusicPickerOpen ? 'reeder-music-library' : undefined}><Music2 size={18} /></button>
           <button onClick={onOpenTypography} className={`btn-icon${isTypographyOpen ? ' active' : ''}`} title="排版与主题设置 (Aa)" aria-label="排版与主题设置 (Aa)"><Type size={18} /></button>
-          <button onClick={onToggleAiSidebar} className={`btn-icon${isAiSidebarOpen ? ' active' : ''}`} title="AI 侧边栏助手" aria-label="AI 侧边栏助手"><Sparkles size={18} /></button>
         </>
       )}
       <span className="navbar-divider" />
+      <button type="button" data-wallpaper-trigger="true" onClick={onToggleWallpaper} className={`btn-icon${isWallpaperOpen ? ' active' : ''}`} title="背景壁纸" aria-label="背景壁纸" aria-expanded={isWallpaperOpen}><ImageIcon size={18} /></button>
       <button onClick={onOpenApiKeyModal} className="btn-icon" title="配置第三方 API Key" aria-label="配置第三方 API Key"><Settings size={18} /></button>
     </div>
   </header>

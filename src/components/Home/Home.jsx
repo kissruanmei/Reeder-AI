@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  ArrowRight, BookOpen, CalendarDays, Clock3, HardHat, Image, Layers3, Music2, Plus
+  ArrowRight, BookOpen, CalendarDays, Clock3, HardHat, Layers3, Music2, Plus
 } from 'lucide-react';
 import { BookCover } from '../Library/BookCover';
 import './home.css';
@@ -85,18 +85,13 @@ export const Home = ({ library, stats, onSelectBook, onOpenLibrary, onOpenGuide,
           <section className="home-panel roadmap-panel" aria-labelledby="roadmap-heading">
             <div className="roadmap-header">
               <HardHat size={26} strokeWidth={1.8} aria-hidden="true" />
-              <div><h2 id="roadmap-heading">施工区</h2><p>以下功能正在规划中，敬请期待。</p></div>
+              <div><h2 id="roadmap-heading">施工区</h2><p>查看阅读功能的开发进度。</p></div>
             </div>
             <div className="roadmap-list">
               <div className="roadmap-item">
-                <Image size={23} strokeWidth={1.8} aria-hidden="true" />
-                <div><strong>自定义壁纸</strong><p>计划支持从本地选择图片作为阅读背景。</p></div>
-                <span>计划中</span>
-              </div>
-              <div className="roadmap-item">
                 <Music2 size={23} strokeWidth={1.8} aria-hidden="true" />
-                <div><strong>音乐播放器</strong><p>为阅读增添音乐，营造沉浸氛围。</p></div>
-                <span>计划中</span>
+                <div><strong>音乐播放器</strong><p>打开书籍后，点击顶部音符，从网易云歌单选歌。</p></div>
+                <span>首版可用</span>
               </div>
             </div>
           </section>

@@ -2,7 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, X, Send, Bot, User, Trash2, Copy, Check, RefreshCw, MessageSquare, Quote } from 'lucide-react';
 import { LLMService } from '../../services/llmService';
 
-export const AiSidebar = ({ isOpen, onClose, selectedText, promptAction, onClearSelectedText }) => {
+export const AiSidebar = ({
+  isOpen,
+  onOpen,
+  onClose,
+  width = 380,
+  onWidthChange,
+  selectedText,
+  promptAction,
+  onClearSelectedText
+}) => {
   const [messages, setMessages] = useState([
     {
       id: 'init-msg',
@@ -13,6 +22,7 @@ export const AiSidebar = ({ isOpen, onClose, selectedText, promptAction, onClear
   const [inputMsg, setInputMsg] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+  const [isResizing, setIsResizing] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Auto scroll to bottom
@@ -120,7 +130,49 @@ export const AiSidebar = ({ isOpen, onClose, selectedText, promptAction, onClear
     ]);
   };
 
-  if (!isOpen) return null;
+  const handleResizePointerDown = (event) => {
+    if (!onWidthChange) return;
+    event.preventDefault();
+    const handle = event.currentTarget;
+    handle.setPointerCapture(event.pointerId);
+    setIsResizing(true);
+
+    const updateWidth = (clientX) => {
+      const maxAllowed = Math.max(320, Math.min(720, window.innerWidth - 260));
+      const nextWidth = Math.round(Math.max(300, Math.min(maxAllowed, window.innerWidth - clientX)));
+      onWidthChange(nextWidth);
+    };
+
+    const handlePointerMove = (moveEvent) => {
+      updateWidth(moveEvent.clientX);
+    };
+
+    const handlePointerUp = () => {
+      setIsResizing(false);
+      handle.removeEventListener('pointermove', handlePointerMove);
+      handle.removeEventListener('pointerup', handlePointerUp);
+      handle.removeEventListener('pointercancel', handlePointerUp);
+    };
+
+    handle.addEventListener('pointermove', handlePointerMove);
+    handle.addEventListener('pointerup', handlePointerUp);
+    handle.addEventListener('pointercancel', handlePointerUp);
+  };
+
+  if (!isOpen) {
+    return (
+      <button
+        type="button"
+        className="glass-panel ai-edge-trigger"
+        onClick={onOpen}
+        title="打开 AI 阅读助手"
+        aria-label="打开 AI 阅读助手"
+      >
+        <Sparkles size={16} />
+        <span>AI 助手</span>
+      </button>
+    );
+  }
 
   return (
     <aside
@@ -130,16 +182,25 @@ export const AiSidebar = ({ isOpen, onClose, selectedText, promptAction, onClear
         top: '56px',
         right: '0',
         bottom: '0',
-        width: '380px',
+        width: `${width}px`,
         maxWidth: '100vw',
         borderLeft: '1px solid var(--border-color)',
         zIndex: 75,
         display: 'flex',
         flexDirection: 'column',
         boxShadow: 'var(--shadow-lg)',
-        animation: 'fadeIn 0.2s ease-out'
+        animation: 'fadeIn 0.2s ease-out',
+        userSelect: isResizing ? 'none' : undefined
       }}
     >
+      <div
+        className={`ai-resize-handle${isResizing ? ' is-resizing' : ''}`}
+        onPointerDown={handleResizePointerDown}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="拖拽调整 AI 侧边栏宽度"
+        title="拖拽调整宽度"
+      />
       {/* Sidebar Header */}
       <div
         style={{

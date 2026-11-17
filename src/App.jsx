@@ -14,7 +14,9 @@ import { ApiKeyModal } from './components/AI/ApiKeyModal';
 import { ImageLightbox } from './components/Reader/ImageLightbox';
 import { LibraryModal } from './components/Library/LibraryModal';
 import { WallpaperBackdrop } from './components/Reader/WallpaperBackdrop';
-import { WallpaperLibrary } from './components/Reader/WallpaperLibrary';
+import { WallpaperPopover } from './components/Reader/WallpaperPopover';
+import { WallpaperStorage } from './services/wallpaperStorage';
+import { MusicPlayer } from './components/Music/MusicPlayer';
 
 function getSortedLibrary() {
   return LibraryService.getLibrary().sort((a, b) => (b.lastReadAt || b.addedAt || 0) - (a.lastReadAt || a.addedAt || 0));
@@ -30,13 +32,17 @@ function readWallpaperSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem('reeder_wallpaper') || '{}');
     return {
-      enabled: saved.enabled === true,
-      selectedId: typeof saved.selectedId === 'string' ? saved.selectedId : '',
-      shade: Number.isFinite(saved.shade) ? Math.max(60, Math.min(100, saved.shade)) : 85,
+      enabled: saved.enabled !== false,
+      opacity: Number.isFinite(saved.opacity) ? Math.max(0, Math.min(100, saved.opacity)) : 25,
     };
   } catch {
-    return { enabled: false, selectedId: '', shade: 85 };
+    return { enabled: true, opacity: 25 };
   }
+}
+
+function readAiSidebarWidth() {
+  const saved = Number(localStorage.getItem('reeder_ai_width'));
+  return Number.isFinite(saved) && saved >= 300 && saved <= 720 ? saved : 380;
 }
 
 export default function App() {
@@ -46,15 +52,8 @@ export default function App() {
   const [lineHeight, setLineHeight] = useState(1.8);
   const [maxWidth, setMaxWidth] = useState(720);
   const [wallpaperSettings, setWallpaperSettings] = useState(readWallpaperSettings);
-  const [wallpaperItems, setWallpaperItems] = useState([]);
-  const [wallpaperInstalled, setWallpaperInstalled] = useState(false);
-  const [wallpaperLoading, setWallpaperLoading] = useState(false);
-  const [wallpaperLibraryError, setWallpaperLibraryError] = useState('');
-  const [wallpaperError, setWallpaperError] = useState('');
-  const [wallpaperAttempt, setWallpaperAttempt] = useState(0);
-  const [isWallpaperLibraryOpen, setIsWallpaperLibraryOpen] = useState(false);
-  const [documentVisible, setDocumentVisible] = useState(document.visibilityState === 'visible');
-  const wallpaperRequestRef = useRef(0);
+  const [wallpaperImage, setWallpaperImage] = useState({ url: '', name: '' });
+  const [isWallpaperOpen, setIsWallpaperOpen] = useState(false);
 
   const [view, setView] = useState('home');
   // Identity, content and position must change together so an old chapter can
@@ -68,13 +67,18 @@ export default function App() {
   const [selectedText, setSelectedText] = useState('');
   const [selectionPos, setSelectionPos] = useState(null);
   const [promptAction, setPromptAction] = useState(null);
+  const [pendingAnchor, setPendingAnchor] = useState('');
   const [activeImage, setActiveImage] = useState(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [isTypographyOpen, setIsTypographyOpen] = useState(false);
-  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(true);
+  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
+  const [aiSidebarWidth, setAiSidebarWidth] = useState(readAiSidebarWidth);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [isMusicPickerOpen, setIsMusicPickerOpen] = useState(false);
+  const closeMusicPicker = useCallback(() => setIsMusicPickerOpen(false), []);
+  const wallpaperUrlRef = useRef('');
 
   const refreshHome = () => {
     setLibrary(getSortedLibrary());
@@ -91,52 +95,57 @@ export default function App() {
   }, [wallpaperSettings]);
 
   useEffect(() => {
-    const updateVisibility = () => setDocumentVisible(document.visibilityState === 'visible');
-    document.addEventListener('visibilitychange', updateVisibility);
-    return () => document.removeEventListener('visibilitychange', updateVisibility);
-  }, []);
-
-  const refreshWallpapers = useCallback(async () => {
-    if (!window.reederWallpaper) return;
-    const request = ++wallpaperRequestRef.current;
-    setWallpaperLoading(true);
-    setWallpaperLibraryError('');
-    try {
-      const result = await window.reederWallpaper.list();
-      if (request !== wallpaperRequestRef.current) return;
-      if (!result.ok) throw new Error(result.error);
-      setWallpaperInstalled(result.installed);
-      setWallpaperItems(result.items);
-    } catch (error) {
-      if (request === wallpaperRequestRef.current) setWallpaperLibraryError(error.message || '无法读取壁纸列表。');
-    } finally {
-      if (request === wallpaperRequestRef.current) setWallpaperLoading(false);
-    }
-  }, []);
+    localStorage.setItem('reeder_ai_width', String(aiSidebarWidth));
+  }, [aiSidebarWidth]);
 
   useEffect(() => {
-    if (view === 'reader') refreshWallpapers();
-  }, [view, refreshWallpapers]);
-
-  const chooseWallpaperInstall = async () => {
-    const request = ++wallpaperRequestRef.current;
-    setWallpaperLoading(true);
-    setWallpaperLibraryError('');
-    try {
-      const result = await window.reederWallpaper.chooseInstall();
-      if (request !== wallpaperRequestRef.current) return;
-      if (!result.ok) throw new Error(result.error);
-      if (!result.canceled) {
-        setWallpaperInstalled(result.installed);
-        setWallpaperItems(result.items);
+    let active = true;
+    WallpaperStorage.load()
+      .then((record) => {
+        if (!active || !record?.blob) return;
+        const url = URL.createObjectURL(record.blob);
+        wallpaperUrlRef.current = url;
+        setWallpaperImage({ url, name: record.name || '自定义背景' });
+      })
+      .catch((error) => {
+        console.warn('Failed to load saved wallpaper:', error);
+      });
+    return () => {
+      active = false;
+      if (wallpaperUrlRef.current) {
+        URL.revokeObjectURL(wallpaperUrlRef.current);
+        wallpaperUrlRef.current = '';
       }
+    };
+  }, []);
+
+  const handleImportWallpaper = async (file) => {
+    try {
+      const record = await WallpaperStorage.save(file);
+      const nextUrl = URL.createObjectURL(record.blob);
+      if (wallpaperUrlRef.current) URL.revokeObjectURL(wallpaperUrlRef.current);
+      wallpaperUrlRef.current = nextUrl;
+      setWallpaperImage({ url: nextUrl, name: record.name });
+      setWallpaperSettings((current) => ({ ...current, enabled: true }));
     } catch (error) {
-      if (request === wallpaperRequestRef.current) setWallpaperLibraryError(error.message || '无法读取安装目录。');
-    } finally {
-      if (request === wallpaperRequestRef.current) setWallpaperLoading(false);
+      alert(error.message || '导入背景图片失败，请重试。');
     }
   };
-  const closeWallpaperLibrary = useCallback(() => setIsWallpaperLibraryOpen(false), []);
+
+  const handleClearWallpaper = async () => {
+    try {
+      await WallpaperStorage.clear();
+      if (wallpaperUrlRef.current) {
+        URL.revokeObjectURL(wallpaperUrlRef.current);
+        wallpaperUrlRef.current = '';
+      }
+      setWallpaperImage({ url: '', name: '' });
+    } catch (error) {
+      alert(error.message || '清除背景图片失败，请重试。');
+    }
+  };
+
+  const closeWallpaperPopover = useCallback(() => setIsWallpaperOpen(false), []);
 
   useEffect(() => {
     if (view === 'home') refreshHome();
@@ -161,8 +170,10 @@ export default function App() {
     setSelectedText('');
     setSelectionPos(null);
     setPromptAction(null);
+    setPendingAnchor('');
     setIsTocOpen(false);
     setIsTypographyOpen(false);
+    setIsAiSidebarOpen(false);
     setIsLibraryOpen(false);
     setView('reader');
   };
@@ -211,8 +222,8 @@ export default function App() {
     setView('home');
     setIsTocOpen(false);
     setIsTypographyOpen(false);
-    setIsWallpaperLibraryOpen(false);
-    setWallpaperError('');
+    setIsWallpaperOpen(false);
+    closeMusicPicker();
     setIsLibraryOpen(false);
     setSelectedText('');
     setSelectionPos(null);
@@ -221,11 +232,44 @@ export default function App() {
   };
 
   const changeChapter = (nextIndex) => {
+    setPendingAnchor('');
     setReading((current) => current ? {
       ...current,
       chapterIndex: Math.max(0, Math.min(current.book.chapters.length - 1, nextIndex))
     } : current);
   };
+
+  const clearPendingAnchor = useCallback(() => setPendingAnchor(''), []);
+
+  const handleNavigateHref = useCallback((rawHref) => {
+    if (!reading?.book?.chapters?.length || !rawHref) return;
+    const chapters = reading.book.chapters;
+    const activeChapter = chapters[reading.chapterIndex] || chapters[0];
+    try {
+      const basePath = activeChapter?.href ? activeChapter.href.replace(/^\/+/, '') : '';
+      const resolved = new URL(rawHref, `https://epub.local/${basePath}`);
+      if (resolved.origin !== 'https://epub.local') return;
+
+      const targetPath = decodeURIComponent(resolved.pathname.replace(/^\/+/, ''));
+      const targetHash = resolved.hash || '';
+      const targetFileName = targetPath.split('/').pop();
+
+      let targetIndex = chapters.findIndex(
+        (ch) => ch.href && decodeURIComponent(ch.href.replace(/^\/+/, '')) === targetPath
+      );
+      if (targetIndex === -1 && targetFileName) {
+        targetIndex = chapters.findIndex(
+          (ch) => ch.href && decodeURIComponent(ch.href.split('/').pop()) === targetFileName
+        );
+      }
+      if (targetIndex === -1) return;
+
+      setPendingAnchor(targetHash);
+      setReading((current) => (current ? { ...current, chapterIndex: targetIndex } : current));
+    } catch {
+      // 忽略无法解析的内部链接，避免跳离阅读器
+    }
+  }, [reading]);
 
   const handleSelectionAction = (action, text) => {
     setSelectedText(text);
@@ -238,10 +282,12 @@ export default function App() {
   const currentChapter = book?.chapters?.[chapterIndex] || book?.chapters?.[0];
   const progressPercent = book ? Math.min(100, Math.round(((chapterIndex + 1) / book.chapters.length) * 100)) : 0;
   const chooseFile = () => fileInputRef.current?.click();
-  const selectedWallpaper = wallpaperItems.find(item => item.id === wallpaperSettings.selectedId);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', '--ai-sidebar-width': `${aiSidebarWidth}px` }}>
+      {wallpaperSettings.enabled && wallpaperImage.url && (
+        <WallpaperBackdrop imageUrl={wallpaperImage.url} opacity={wallpaperSettings.opacity} />
+      )}
       <input
         ref={fileInputRef}
         type="file"
@@ -263,20 +309,19 @@ export default function App() {
         onImport={chooseFile}
         onOpenToc={() => setIsTocOpen(!isTocOpen)}
         onOpenTypography={() => setIsTypographyOpen(!isTypographyOpen)}
-        onToggleAiSidebar={() => setIsAiSidebarOpen(!isAiSidebarOpen)}
         onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
-        isAiSidebarOpen={isAiSidebarOpen}
+        onToggleMusicPicker={() => setIsMusicPickerOpen(open => !open)}
+        onToggleWallpaper={() => setIsWallpaperOpen(open => !open)}
         isTypographyOpen={isTypographyOpen}
         isTocOpen={isTocOpen}
+        isMusicPickerOpen={isMusicPickerOpen}
+        isWallpaperOpen={isWallpaperOpen}
       />
 
       {view === 'home' ? (
         <Home library={library} stats={stats} onSelectBook={handleSelectBook} onOpenLibrary={() => setIsLibraryOpen(true)} onOpenGuide={() => setIsGuideOpen(true)} onImport={chooseFile} />
       ) : book && (
         <>
-          {wallpaperSettings.enabled && selectedWallpaper && documentVisible && (
-            <WallpaperBackdrop key={`${selectedWallpaper.id}:${wallpaperAttempt}`} project={selectedWallpaper} shade={wallpaperSettings.shade} isAiSidebarOpen={isAiSidebarOpen} onError={setWallpaperError} />
-          )}
           <EpubReader
             chapter={currentChapter}
             isAiSidebarOpen={isAiSidebarOpen}
@@ -286,6 +331,9 @@ export default function App() {
             fontFamily={fontFamily}
             lineHeight={lineHeight}
             maxWidth={maxWidth}
+            targetAnchor={pendingAnchor}
+            onClearAnchor={clearPendingAnchor}
+            onNavigateHref={handleNavigateHref}
             onSelectionChange={(text, pos) => { setSelectedText(text || ''); setSelectionPos(pos); }}
             onImageClick={(src, alt) => setActiveImage({ src, alt })}
             onPrevChapter={() => changeChapter(chapterIndex - 1)}
@@ -294,46 +342,40 @@ export default function App() {
             hasNext={chapterIndex < book.chapters.length - 1}
           />
           {selectedText && selectionPos && <SelectionTooltip position={selectionPos} selectedText={selectedText} onAction={handleSelectionAction} onClose={() => { setSelectedText(''); setSelectionPos(null); }} />}
-          {wallpaperError && <div className="wallpaper-error" role="status">
-            <span>{wallpaperError}</span>
-            <button type="button" onClick={() => setWallpaperError('')} aria-label="关闭壁纸提示">×</button>
-          </div>}
           {isTypographyOpen && <TypographyControl
             theme={theme} setTheme={setTheme} fontSize={fontSize} setFontSize={setFontSize}
             fontFamily={fontFamily} setFontFamily={setFontFamily} lineHeight={lineHeight} setLineHeight={setLineHeight}
             maxWidth={maxWidth} setMaxWidth={setMaxWidth} onClose={() => setIsTypographyOpen(false)}
-            wallpaperEnabled={wallpaperSettings.enabled}
-            wallpaperTitle={selectedWallpaper?.title}
-            wallpaperMissing={Boolean(wallpaperSettings.selectedId && !selectedWallpaper && !wallpaperLoading)}
-            wallpaperShade={wallpaperSettings.shade}
-            wallpaperAvailable={Boolean(window.reederWallpaper)}
-            onWallpaperEnabledChange={enabled => { setWallpaperError(''); setWallpaperAttempt(current => current + 1); setWallpaperSettings(current => ({ ...current, enabled })); }}
-            onWallpaperShadeChange={shade => setWallpaperSettings(current => ({ ...current, shade }))}
-            onOpenWallpaper={() => { setIsWallpaperLibraryOpen(true); refreshWallpapers(); }}
           />}
           <TocDrawer isOpen={isTocOpen} chapters={book.chapters} currentChapterId={currentChapter?.id} onSelectChapter={(chapter) => { const index = book.chapters.findIndex((item) => item.id === chapter.id); if (index !== -1) changeChapter(index); }} onClose={() => setIsTocOpen(false)} />
-          <AiSidebar isOpen={isAiSidebarOpen} onClose={() => setIsAiSidebarOpen(false)} selectedText={selectedText} promptAction={promptAction} onClearSelectedText={() => { setSelectedText(''); setPromptAction(null); }} />
+          <AiSidebar
+            isOpen={isAiSidebarOpen}
+            onOpen={() => setIsAiSidebarOpen(true)}
+            onClose={() => setIsAiSidebarOpen(false)}
+            width={aiSidebarWidth}
+            onWidthChange={setAiSidebarWidth}
+            selectedText={selectedText}
+            promptAction={promptAction}
+            onClearSelectedText={() => { setSelectedText(''); setPromptAction(null); }}
+          />
         </>
       )}
 
+      <WallpaperPopover
+        isOpen={isWallpaperOpen}
+        enabled={wallpaperSettings.enabled}
+        opacity={wallpaperSettings.opacity}
+        imageUrl={wallpaperImage.url}
+        imageName={wallpaperImage.name}
+        onEnabledChange={(enabled) => setWallpaperSettings(current => ({ ...current, enabled }))}
+        onOpacityChange={(opacity) => setWallpaperSettings(current => ({ ...current, opacity }))}
+        onImportImage={handleImportWallpaper}
+        onClearImage={handleClearWallpaper}
+        onClose={closeWallpaperPopover}
+      />
+      <MusicPlayer isHome={view === 'home'} pickerOpen={isMusicPickerOpen} onOpenPicker={() => setIsMusicPickerOpen(true)} onClosePicker={closeMusicPicker} />
       <ApiKeyModal isOpen={isApiKeyModalOpen} onClose={() => setIsApiKeyModalOpen(false)} />
       <GuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
-      {isWallpaperLibraryOpen && <WallpaperLibrary
-        items={wallpaperItems}
-        installed={wallpaperInstalled}
-        loading={wallpaperLoading}
-        error={wallpaperLibraryError}
-        selectedId={wallpaperSettings.selectedId}
-        onSelect={item => {
-          setWallpaperError('');
-          setWallpaperAttempt(current => current + 1);
-          setWallpaperSettings(current => ({ ...current, selectedId: item.id, enabled: true }));
-          setIsWallpaperLibraryOpen(false);
-        }}
-        onRefresh={refreshWallpapers}
-        onChooseInstall={chooseWallpaperInstall}
-        onClose={closeWallpaperLibrary}
-      />}
       <LibraryModal
         isOpen={isLibraryOpen}
         onClose={() => setIsLibraryOpen(false)}

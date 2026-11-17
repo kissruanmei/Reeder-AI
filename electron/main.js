@@ -1,17 +1,18 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import { randomBytes } from 'crypto';
 import { readFile } from 'fs/promises';
 import http from 'http';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { setupWallpaper } from './wallpaper.js';
+import { fileURLToPath, pathToFileURL } from 'url';
+import { setupMusic } from './music.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
+const indexPath = path.join(__dirname, '../dist/index.html');
+const developmentUrl = 'http://localhost:3000/';
 
 let mainWindow;
-let wallpaper;
-let quitting = false;
 
 // Development builds used localhost:3000 for storage. A short-lived, local
 // helper lets the packaged app copy those records without changing the source.
@@ -37,7 +38,6 @@ async function createMigrationServer() {
 }
 
 async function createWindow() {
-  const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
   let migrationUrl = null;
   if (!isDev) {
     try {
@@ -71,23 +71,25 @@ async function createWindow() {
     return { action: 'allow' };
   });
 
+  const appBaseUrl = isDev ? developmentUrl : pathToFileURL(indexPath).href;
+
+  mainWindow.webContents.on('will-navigate', (event, targetUrl) => {
+    if (!targetUrl.startsWith(appBaseUrl)) {
+      event.preventDefault();
+      if (/^https?:\/\//i.test(targetUrl)) {
+        shell.openExternal(targetUrl).catch(() => {});
+      }
+    }
+  });
+
   if (isDev) {
-    mainWindow.loadURL('http://localhost:3000');
+    mainWindow.loadURL(developmentUrl);
   } else {
-    // Load built index.html
-    const indexPath = path.join(__dirname, '../dist/index.html');
     mainWindow.loadFile(indexPath, migrationUrl ? { query: { legacyMigration: migrationUrl } } : undefined);
   }
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
-  });
-
-  mainWindow.on('minimize', () => wallpaper.stop());
-  mainWindow.on('hide', () => wallpaper.stop());
-  mainWindow.webContents.on('render-process-gone', () => wallpaper.stop());
-  mainWindow.webContents.on('did-start-navigation', (_event, _url, isInPlace, isMainFrame) => {
-    if (isMainFrame && !isInPlace) wallpaper.stop();
   });
 
   mainWindow.on('closed', () => {
@@ -96,15 +98,20 @@ async function createWindow() {
 }
 
 app.whenReady().then(() => {
-  wallpaper = setupWallpaper(() => mainWindow);
+  ipcMain.handle('app:open-external', (_event, rawUrl) => {
+    if (typeof rawUrl !== 'string') return false;
+    try {
+      const parsed = new URL(rawUrl);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return shell.openExternal(parsed.href).then(() => true).catch(() => false);
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  });
+  setupMusic(() => mainWindow, isDev ? developmentUrl : pathToFileURL(indexPath).href);
   return createWindow();
-});
-
-app.on('before-quit', (event) => {
-  if (quitting || !wallpaper) return;
-  event.preventDefault();
-  quitting = true;
-  wallpaper.stop().finally(() => app.quit());
 });
 
 app.on('window-all-closed', () => {

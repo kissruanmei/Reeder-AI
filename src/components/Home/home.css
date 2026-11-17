@@ -18,7 +18,9 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  background: var(--bg-primary);
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 .home-content {

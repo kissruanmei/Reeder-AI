@@ -253,13 +253,77 @@ button {
 
 /* Keep the reading canvas clear of the open AI sidebar on desktop. */
 .reader-canvas {
+  position: relative;
+  z-index: 1;
   width: 100%;
 }
 
 @media (min-width: 760px) {
   .reader-canvas-with-ai {
-    width: calc(100% - 380px);
+    width: calc(100% - var(--ai-sidebar-width, 380px));
   }
+}
+
+/* AI Sidebar right-middle edge trigger */
+.ai-edge-trigger {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 75;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  border-right: none;
+  box-shadow: var(--shadow-md);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  writing-mode: vertical-rl;
+  letter-spacing: 0.08em;
+  transition: padding-right var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+
+.ai-edge-trigger:hover {
+  padding-right: 12px;
+  color: var(--accent-color);
+}
+
+.ai-edge-trigger svg {
+  color: var(--accent-color);
+}
+
+/* AI Sidebar left-edge resize handle */
+.ai-resize-handle {
+  position: absolute;
+  top: 0;
+  left: -4px;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-resize-handle::after {
+  content: '';
+  width: 3px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: var(--border-color);
+  opacity: 0;
+  transition: opacity var(--transition-fast), background var(--transition-fast);
+}
+
+.ai-resize-handle:hover::after,
+.ai-resize-handle.is-resizing::after {
+  opacity: 1;
+  background: var(--accent-color);
 }
 
 /* Reader Canvas Images Styling - Apple Books & Light Novel Illustrations */

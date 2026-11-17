@@ -1,6 +1,17 @@
 import React, { useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 
+function scrollToAnchor(container, rawAnchor) {
+  if (!container || !rawAnchor) return false;
+  const cleanId = decodeURIComponent(rawAnchor.replace(/^#/, ''));
+  if (!cleanId) return false;
+  const escaped = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(cleanId) : cleanId.replace(/["\\]/g, '\\$&');
+  const target = container.querySelector(`#${escaped}`) || container.querySelector(`a[name="${escaped}"]`);
+  if (!target) return false;
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  return true;
+}
+
 export const EpubReader = ({
   chapter,
   isAiSidebarOpen,
@@ -10,6 +21,9 @@ export const EpubReader = ({
   fontFamily,
   lineHeight,
   maxWidth,
+  targetAnchor,
+  onClearAnchor,
+  onNavigateHref,
   onSelectionChange,
   onImageClick,
   onPrevChapter,
@@ -20,12 +34,53 @@ export const EpubReader = ({
   const contentRef = useRef(null);
   const mainRef = useRef(null);
 
-  // Reset scroll position to top on chapter change
+  // Reset scroll position or jump to target anchor on chapter/anchor change
   useEffect(() => {
+    if (targetAnchor) {
+      scrollToAnchor(contentRef.current, targetAnchor);
+      onClearAnchor?.();
+      return;
+    }
     if (mainRef.current) {
       mainRef.current.scrollTop = 0;
     }
-  }, [currentChapterIndex, chapter?.id]);
+  }, [currentChapterIndex, chapter?.id, targetAnchor, onClearAnchor]);
+
+  const handleArticleClick = (event) => {
+    const anchor = event.target.closest?.('a');
+    if (!anchor) return;
+
+    // 始终阻止阅读器内 <a> 标签触发主窗口页面跳转导致白屏
+    event.preventDefault();
+    event.stopPropagation();
+
+    const selected = window.getSelection()?.toString().trim();
+    if (selected) return;
+
+    const rawHref = (anchor.getAttribute('href') || anchor.getAttribute('xlink:href') || '').trim();
+    if (!rawHref || rawHref.startsWith('javascript:')) return;
+
+    if (/^https?:\/\//i.test(rawHref)) {
+      if (window.reederApp?.openExternal) {
+        window.reederApp.openExternal(rawHref);
+      } else {
+        window.open(rawHref, '_blank', 'noopener,noreferrer');
+      }
+      return;
+    }
+
+    if (/^mailto:/i.test(rawHref)) {
+      window.open(rawHref, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    if (rawHref.startsWith('#')) {
+      scrollToAnchor(contentRef.current, rawHref);
+      return;
+    }
+
+    onNavigateHref?.(rawHref);
+  };
 
   // Handle Text Selection inside Reader Canvas
   const handleMouseUp = (e) => {
@@ -97,6 +152,7 @@ export const EpubReader = ({
       {/* Reader Canvas Container */}
       <article
         ref={contentRef}
+        onClick={handleArticleClick}
         style={{
           width: '100%',
           maxWidth: `${maxWidth}px`,

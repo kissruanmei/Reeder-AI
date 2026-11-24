@@ -1,5 +1,8 @@
-import React, { useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { applyHighlights, getSelectionOffsets, scrollToHighlight } from '../../utils/highlightDom';
+import { HIGHLIGHT_COLORS } from '../../services/noteService';
+import './notes.css';
 
 function scrollToAnchor(container, rawAnchor) {
   if (!container || !rawAnchor) return false;
@@ -14,6 +17,7 @@ function scrollToAnchor(container, rawAnchor) {
 
 export const EpubReader = ({
   chapter,
+  chapterNotes = [],
   isAiSidebarOpen,
   currentChapterIndex,
   totalChapters,
@@ -23,8 +27,11 @@ export const EpubReader = ({
   maxWidth,
   targetAnchor,
   onClearAnchor,
+  pendingNoteId,
+  onClearPendingNote,
   onNavigateHref,
   onSelectionChange,
+  onHighlightClick,
   onImageClick,
   onPrevChapter,
   onNextChapter,
@@ -32,10 +39,31 @@ export const EpubReader = ({
   hasNext
 }) => {
   const contentRef = useRef(null);
+  const htmlContainerRef = useRef(null);
   const mainRef = useRef(null);
+  const hoverTimerRef = useRef(null);
+  const [hoverPreview, setHoverPreview] = useState(null);
+
+  const chapterHtml = useMemo(() => ({ __html: chapter?.content || '' }), [chapter?.id, chapter?.content]);
+
+  const notesById = useMemo(() => {
+    const map = new Map();
+    chapterNotes.forEach((item) => map.set(item.id, item));
+    return map;
+  }, [chapterNotes]);
+
+  const clearHoverPreview = () => {
+    if (hoverTimerRef.current) {
+      window.clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    setHoverPreview(null);
+  };
 
   // Reset scroll position or jump to target anchor on chapter/anchor change
   useEffect(() => {
+    clearHoverPreview();
+    if (pendingNoteId) return;
     if (targetAnchor) {
       scrollToAnchor(contentRef.current, targetAnchor);
       onClearAnchor?.();
@@ -44,9 +72,46 @@ export const EpubReader = ({
     if (mainRef.current) {
       mainRef.current.scrollTop = 0;
     }
-  }, [currentChapterIndex, chapter?.id, targetAnchor, onClearAnchor]);
+  }, [currentChapterIndex, chapter?.id, targetAnchor, pendingNoteId, onClearAnchor]);
+
+  // Apply chapter highlights onto DOM whenever chapter content or notes change
+  useEffect(() => {
+    if (!htmlContainerRef.current) return;
+    applyHighlights(htmlContainerRef.current, chapterNotes);
+  }, [chapter?.id, chapter?.content, chapterNotes]);
+
+  // Jump and flash specific highlight when navigating from Notes Drawer
+  useEffect(() => {
+    if (!pendingNoteId || !htmlContainerRef.current) return;
+    const frame = window.requestAnimationFrame(() => {
+      scrollToHighlight(htmlContainerRef.current, pendingNoteId);
+      onClearPendingNote?.();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [pendingNoteId, currentChapterIndex, chapterNotes, onClearPendingNote]);
+
+  useEffect(() => () => clearHoverPreview(), []);
 
   const handleArticleClick = (event) => {
+    const selected = window.getSelection()?.toString().trim();
+
+    // 点击已有高亮句：弹出编辑/查看浮卡
+    const highlightEl = event.target.closest?.('mark.reeder-highlight');
+    if (highlightEl && !selected) {
+      const noteId = highlightEl.dataset.noteId;
+      const matched = noteId ? notesById.get(noteId) : null;
+      if (matched) {
+        clearHoverPreview();
+        const rect = highlightEl.getBoundingClientRect();
+        onHighlightClick?.(matched, {
+          top: rect.top,
+          left: rect.left + rect.width / 2,
+          bottom: rect.bottom
+        });
+        return;
+      }
+    }
+
     const anchor = event.target.closest?.('a');
     if (!anchor) return;
 
@@ -54,7 +119,6 @@ export const EpubReader = ({
     event.preventDefault();
     event.stopPropagation();
 
-    const selected = window.getSelection()?.toString().trim();
     if (selected) return;
 
     const rawHref = (anchor.getAttribute('href') || anchor.getAttribute('xlink:href') || '').trim();
@@ -82,6 +146,39 @@ export const EpubReader = ({
     onNavigateHref?.(rawHref);
   };
 
+  // 鼠标悬停带短评的高亮句时延迟 220ms 轻量预览短评
+  const handleArticleMouseOver = (event) => {
+    const highlightEl = event.target.closest?.('mark.reeder-highlight');
+    if (!highlightEl) return;
+
+    const noteId = highlightEl.dataset.noteId;
+    const matched = noteId ? notesById.get(noteId) : null;
+    if (!matched || !(matched.note || '').trim()) return;
+
+    if (hoverPreview?.note?.id === matched.id) return;
+    if (hoverTimerRef.current) window.clearTimeout(hoverTimerRef.current);
+
+    const rect = highlightEl.getBoundingClientRect();
+    hoverTimerRef.current = window.setTimeout(() => {
+      setHoverPreview({
+        note: matched,
+        top: rect.top,
+        bottom: rect.bottom,
+        left: rect.left + rect.width / 2
+      });
+    }, 220);
+  };
+
+  const handleArticleMouseOut = (event) => {
+    const fromHighlight = event.target.closest?.('mark.reeder-highlight');
+    if (!fromHighlight) return;
+    const toHighlight = event.relatedTarget?.closest?.('mark.reeder-highlight');
+    if (toHighlight && toHighlight.dataset.noteId === fromHighlight.dataset.noteId) {
+      return;
+    }
+    clearHoverPreview();
+  };
+
   // Handle Text Selection inside Reader Canvas
   const handleMouseUp = (e) => {
     // If clicked on an image, ignore text selection and fire image click
@@ -96,26 +193,32 @@ export const EpubReader = ({
 
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) {
-      onSelectionChange(null, null);
+      onSelectionChange(null, null, null);
       return;
     }
 
     const selectedText = selection.toString().trim();
     if (!selectedText) {
-      onSelectionChange(null, null);
+      onSelectionChange(null, null, null);
       return;
     }
 
-    // Get position of selected bounds
+    // Get position & chapter offsets of selected bounds
     try {
       const range = selection.getRangeAt(0);
       const rect = range.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
-        onSelectionChange(selectedText, {
-          top: rect.top,
-          left: rect.left + rect.width / 2,
-          bottom: rect.bottom
-        });
+        const meta = getSelectionOffsets(htmlContainerRef.current, range);
+        clearHoverPreview();
+        onSelectionChange(
+          selectedText,
+          {
+            top: rect.top,
+            left: rect.left + rect.width / 2,
+            bottom: rect.bottom
+          },
+          meta
+        );
       }
     } catch (err) {
       console.warn('Failed to calculate selection rect:', err);
@@ -131,6 +234,32 @@ export const EpubReader = ({
 
   // Progress calculations
   const progressPercent = Math.min(100, Math.round(((currentChapterIndex + 1) / (totalChapters || 1)) * 100));
+
+  const renderHoverPreview = () => {
+    if (!hoverPreview?.note) return null;
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const clampedLeft = Math.max(150, Math.min(viewportWidth - 150, hoverPreview.left));
+    const showBelow = hoverPreview.top < 140;
+    const top = showBelow ? hoverPreview.bottom + 8 : hoverPreview.top - 8;
+    const colorMeta = HIGHLIGHT_COLORS.find((item) => item.id === hoverPreview.note.color) || HIGHLIGHT_COLORS[0];
+
+    return (
+      <div
+        className="glass-panel note-hover-preview"
+        style={{
+          left: `${clampedLeft}px`,
+          top: `${top}px`,
+          transform: showBelow ? 'translateX(-50%)' : 'translate(-50%, -100%)'
+        }}
+      >
+        <div className="note-hover-preview-header">
+          <span className="note-hover-preview-dot" style={{ backgroundColor: colorMeta.dot }} />
+          <span>我的短评 · 点击编辑</span>
+        </div>
+        <div className="note-hover-preview-body">{hoverPreview.note.note}</div>
+      </div>
+    );
+  };
 
   return (
     <main
@@ -148,11 +277,14 @@ export const EpubReader = ({
         transition: 'background-color var(--transition-normal)'
       }}
       onMouseUp={handleMouseUp}
+      onScroll={clearHoverPreview}
     >
       {/* Reader Canvas Container */}
       <article
         ref={contentRef}
         onClick={handleArticleClick}
+        onMouseOver={handleArticleMouseOver}
+        onMouseOut={handleArticleMouseOut}
         style={{
           width: '100%',
           maxWidth: `${maxWidth}px`,
@@ -166,13 +298,15 @@ export const EpubReader = ({
       >
         {/* Render HTML content safely */}
         {chapter?.content ? (
-          <div dangerouslySetInnerHTML={{ __html: chapter.content }} />
+          <div ref={htmlContainerRef} dangerouslySetInnerHTML={chapterHtml} />
         ) : (
           <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
             请在上方加载电子书章节
           </div>
         )}
       </article>
+
+      {renderHoverPreview()}
 
       {/* Redesigned Apple-Style Floating Pagination Footer */}
       <footer
@@ -182,7 +316,7 @@ export const EpubReader = ({
           width: '100%',
           maxWidth: `${Math.max(620, maxWidth)}px`,
           display: 'flex',
-          justify: 'space-between',
+          justifyContent: 'space-between',
           alignItems: 'center',
           padding: '10px 16px',
           borderRadius: 'var(--radius-full)',

@@ -10,6 +10,8 @@ export const AiSidebar = ({
   onWidthChange,
   selectedText,
   promptAction,
+  promptNote,
+  promptNonce,
   onClearSelectedText
 }) => {
   const [messages, setMessages] = useState([
@@ -37,11 +39,11 @@ export const AiSidebar = ({
   // React to incoming text selection prompt action
   useEffect(() => {
     if (selectedText && promptAction) {
-      handlePromptAction(promptAction, selectedText);
+      handlePromptAction(promptAction, selectedText, promptNote);
     }
-  }, [selectedText, promptAction]);
+  }, [selectedText, promptAction, promptNote, promptNonce]);
 
-  const handlePromptAction = (action, text) => {
+  const handlePromptAction = (action, text, noteText = '') => {
     let promptText = '';
     if (action === 'explain') {
       promptText = `请结合上下文，详细解释并分析词汇/概念“${text}”的涵义与使用背景。`;
@@ -51,6 +53,11 @@ export const AiSidebar = ({
       promptText = `请提取并总结以下段落的核心要点：\n\n"${text}"`;
     } else if (action === 'ask') {
       promptText = `请简述我对该段文本的解读，并回答相关疑问：\n\n"${text}"`;
+    } else if (action === 'discuss_note') {
+      const cleanNote = (noteText || '').trim();
+      promptText = cleanNote
+        ? `我在阅读时高亮了下面这段话：\n\n"${text}"\n\n我的感悟/短评是：${cleanNote}\n\n请结合原文回应我的感悟，并帮我做一些延伸思考或补充视角。`
+        : `我在阅读时高亮了下面这段话：\n\n"${text}"\n\n请结合语境帮我深入赏析这段文字的精妙之处，并提供延伸思考。`;
     }
 
     if (promptText) {

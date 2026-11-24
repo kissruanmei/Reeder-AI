@@ -3,6 +3,7 @@
  */
 
 import { BookStorage } from './bookStorage.js';
+import { NoteService } from './noteService.js';
 
 const STORAGE_LIBRARY_KEY = 'reeder_ai_library';
 const STORAGE_STATS_KEY = 'reeder_ai_stats';
@@ -70,6 +71,7 @@ export class LibraryService {
       const library = this.getLibrary().filter(b => b.id !== bookId);
       localStorage.setItem(STORAGE_LIBRARY_KEY, JSON.stringify(library));
       localStorage.removeItem(STORAGE_PROGRESS_PREFIX + bookId);
+      NoteService.clearBookNotes(bookId);
       BookStorage.deleteBookContent(bookId);
     } catch (e) {
       console.error('Failed to remove book:', e);

@@ -18,7 +18,7 @@ export const LibraryModal = ({ isOpen, onClose, onSelectBook, onDeleteBook, onIm
 
   const handleRemoveBook = (e, bookId) => {
     e.stopPropagation();
-    if (confirm('确定从书架中移除本书及其阅读进度吗？')) {
+    if (confirm('确定从书架中移除本书及其阅读进度与笔记吗？')) {
       LibraryService.removeBook(bookId);
       const remaining = LibraryService.getLibrary();
       setLibrary(remaining);

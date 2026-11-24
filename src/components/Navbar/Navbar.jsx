@@ -1,11 +1,11 @@
 import React from 'react';
-import { BookOpen, FolderOpen, Image as ImageIcon, Library, Music2, Plus, Settings, Type } from 'lucide-react';
+import { BookOpen, FolderOpen, Image as ImageIcon, Library, Music2, Plus, Settings, StickyNote, Type } from 'lucide-react';
 import { ReederLogo } from '../Logo/ReederLogo';
 
 export const Navbar = ({
   isHome, bookTitle, author, progressPercent, onGoHome, onOpenLibrary, onImport,
-  onOpenToc, onOpenTypography, onOpenApiKeyModal, onToggleMusicPicker, onToggleWallpaper,
-  isTypographyOpen, isTocOpen, isMusicPickerOpen, isWallpaperOpen
+  onOpenToc, onOpenNotes, onOpenTypography, onOpenApiKeyModal, onToggleMusicPicker, onToggleWallpaper,
+  isTypographyOpen, isTocOpen, isNotesOpen, notesCount = 0, isMusicPickerOpen, isWallpaperOpen
 }) => (
   <header className={`glass-header app-navbar${isHome ? ' app-navbar-home' : ''}`}>
     <div className="navbar-group">
@@ -16,6 +16,20 @@ export const Navbar = ({
       </button>
       <button onClick={onImport} className="btn-icon" title="打开本地 EPUB 电子书" aria-label="打开本地 EPUB 电子书"><FolderOpen size={18} /></button>
       <button onClick={isHome ? onOpenLibrary : onOpenToc} className={`btn-icon${isTocOpen && !isHome ? ' active' : ''}`} title={isHome ? '查看全部图书' : '图书目录'} aria-label={isHome ? '查看全部图书' : '图书目录'}><BookOpen size={18} /></button>
+      {!isHome && (
+        <button
+          type="button"
+          onClick={onOpenNotes}
+          className={`btn-icon navbar-note-btn${isNotesOpen ? ' active' : ''}`}
+          title="阅读笔记与高亮"
+          aria-label="阅读笔记与高亮"
+        >
+          <StickyNote size={18} />
+          {notesCount > 0 && (
+            <span className="navbar-note-badge">{notesCount > 99 ? '99+' : notesCount}</span>
+          )}
+        </button>
+      )}
     </div>
 
     {!isHome && (
